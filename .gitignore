@@ -1,0 +1,38 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+email_config.json
+
+# Local database files
+*.db
+*.sqlite3
+
+# Log files
+*.log
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS & temporary files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Project backup archives
+CarePulse_Submission_Ready.zip
+CarePulse_Submission_Ready/
