@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CarePulse — IoT-Based Healthcare Monitoring System{% endblock %}</title>
+  
+  <!-- Google Fonts: Manrope & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome Icons 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Custom CarePulse Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+  {% if request.endpoint in ['home_view', 'login_view', 'register_view', 'patient_login_view', 'caregiver_login_view', 'patient_register_view', 'caregiver_register_view', 'measure_view', 'admin_bp.admin_login', 'family_bp.family_login', 'doctor_login_view'] %}
+    <!-- Public Layout (No Sidebar) -->
+    <div class="public-wrapper">
+      {% block public_content %}{% endblock %}
+    </div>
+  {% else %}
+    <!-- Authenticated App Shell (Sidebar + Topbar + Content) -->
+    <div class="app-shell" id="appShell">
+      
+      <!-- Collapsible Sidebar -->
+      <aside class="app-sidebar" id="appSidebar">
+        <div class="sidebar-header">
+          <a href="{{ url_for('dashboard_view') }}" class="brand-link">
+            <div class="brand-icon">
+              <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <div class="brand-text">
+              <span class="brand-title">CAREPULSE</span>
+              <span class="brand-sub">HEALTHCARE IoT</span>
+            </div>
+          </a>
+          <button class="btn-sidebar-close d-lg-none" id="sidebarCloseBtn" aria-label="Close Sidebar">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="sidebar-user">
+          <div class="user-avatar">
+            {{ current_user_name[:2].upper() }}
+          </div>
+          <div class="user-info">
+            <div class="user-name text-truncate">{{ current_user_name }}</div>
+            <div class="user-role">{{ current_user_role }}</div>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="sidebar-nav">
+          <ul class="nav-list">
+            {% if current_user_role|lower == 'patient' %}
+            <li class="nav-item">
+              <a href="{{ url_for('dashboard_view') }}" class="nav-link {% if request.endpoint == 'dashboard_view' %}active{% endif %}">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('monitoring_view') }}" class="nav-link {% if request.endpoint == 'monitoring_view' %}active{% endif %}">
+                <i class="fa-solid fa-heart-circle-bolt"></i>
+                <span>Live Monitoring</span>
+                <span class="live-dot-pulse"></span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('history_view') }}" class="nav-link {% if request.endpoint == 'history_view' %}active{% endif %}">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Health History</span>
+              </a>
+            </li>
+            
+            <li class="nav-item">
+              <a href="{{ url_for('devices_view') }}" class="nav-link {% if request.endpoint == 'devices_view' %}active{% endif %}">
+                <i class="fa-solid fa-microchip"></i>
+                <span>My Device</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('caregivers_view') }}" class="nav-link {% if request.endpoint == 'caregivers_view' %}active{% endif %}">
+                <i class="fa-solid fa-people-roof"></i>
+                <span>My Caregiver</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('reports_view') }}" class="nav-link {% if request.endpoint == 'reports_view' %}active{% endif %}">
+                <i class="fa-solid fa-file-medical"></i>
+                <span>Reports</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('settings_view') }}" class="nav-link {% if request.endpoint == 'settings_view' %}active{% endif %}">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+              </a>
+            </li>
+
+            {% elif current_user_role|lower == 'caregiver' %}
+            <li class="nav-item">
+              <a href="{{ url_for('caregiver_dashboard_view') }}" class="nav-link {% if request.endpoint == 'caregiver_dashboard_view' %}active{% endif %}">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('patients_view') }}" class="nav-link {% if request.endpoint == 'patients_view' %}active{% endif %}">
+                <i class="fa-solid fa-hospital-user"></i>
+                <span>Patients</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('monitoring_view') }}" class="nav-link {% if request.endpoint == 'monitoring_view' %}active{% endif %}">
+                <i class="fa-solid fa-heart-circle-bolt"></i>
+                <span>Live Monitoring</span>
+                <span class="live-dot-pulse"></span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('history_view') }}" class="nav-link {% if request.endpoint == 'history_view' %}active{% endif %}">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Health History</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('alerts_view') }}" class="nav-link {% if request.endpoint == 'alerts_view' %}active{% endif %}">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Alerts</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('caregivers_view') }}" class="nav-link {% if request.endpoint == 'caregivers_view' %}active{% endif %}">
+                <i class="fa-solid fa-people-roof"></i>
+                <span>Caregivers</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('reports_view') }}" class="nav-link {% if request.endpoint == 'reports_view' %}active{% endif %}">
+                <i class="fa-solid fa-file-medical"></i>
+                <span>Reports</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('settings_view') }}" class="nav-link {% if request.endpoint == 'settings_view' %}active{% endif %}">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+              </a>
+            </li>
+            
+            {% elif current_user_role|lower == 'admin' %}
+            <li class="nav-item">
+              <a href="{{ url_for('admin_bp.admin_dashboard') }}" class="nav-link">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('admin_bp.manage_users') }}" class="nav-link">
+                <i class="fa-solid fa-users"></i>
+                <span>Users</span>
+              </a>
+            </li>
+            
+
+            {% elif current_user_role|lower == 'family member' %}
+            <li class="nav-item">
+              <a href="{{ url_for('family_bp.family_dashboard') }}" class="nav-link">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+              <li class="nav-item">
+                <a href="{{ url_for('monitoring_view') }}" class="nav-link {% if request.endpoint == 'monitoring_view' %}active{% endif %}">
+                  <i class="fa-solid fa-heart-circle-bolt"></i>
+                  <span>Live Monitoring</span>
+                  <span class="live-dot-pulse"></span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('history_view') }}" class="nav-link {% if request.endpoint == 'history_view' %}active{% endif %}">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  <span>Health History</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('alerts_view') }}" class="nav-link {% if request.endpoint == 'alerts_view' %}active{% endif %}">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span>Alerts</span>
+                </a>
+              </li>
+            <li class="nav-item">
+              <a href="{{ url_for('thresholds_view') }}" class="nav-link {% if request.endpoint == 'thresholds_view' %}active{% endif %}">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Thresholds</span>
+              </a>
+            </li>
+              <li class="nav-item">
+                <a href="{{ url_for('reports_view') }}" class="nav-link {% if request.endpoint == 'reports_view' %}active{% endif %}">
+                  <i class="fa-solid fa-file-medical"></i>
+                  <span>Reports</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('settings_view') }}" class="nav-link {% if request.endpoint == 'settings_view' %}active{% endif %}">
+                  <i class="fa-solid fa-gear"></i>
+                  <span>Settings</span>
+                </a>
+              </li>
+
+            {% elif current_user_role|lower == 'doctor' %}
+            <li class="nav-item">
+              <a href="{{ url_for('doctor_dashboard_view') }}" class="nav-link">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+              <li class="nav-item">
+                <a href="{{ url_for('patients_view') }}" class="nav-link {% if request.endpoint == 'patients_view' %}active{% endif %}">
+                  <i class="fa-solid fa-hospital-user"></i>
+                  <span>Patients</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('monitoring_view') }}" class="nav-link {% if request.endpoint == 'monitoring_view' %}active{% endif %}">
+                  <i class="fa-solid fa-heart-circle-bolt"></i>
+                  <span>Live Monitoring</span>
+                  <span class="live-dot-pulse"></span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('history_view') }}" class="nav-link {% if request.endpoint == 'history_view' %}active{% endif %}">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  <span>Health History</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('alerts_view') }}" class="nav-link {% if request.endpoint == 'alerts_view' %}active{% endif %}">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span>Alerts</span>
+                </a>
+              </li>
+            <li class="nav-item">
+              <a href="{{ url_for('thresholds_view') }}" class="nav-link {% if request.endpoint == 'thresholds_view' %}active{% endif %}">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Thresholds</span>
+              </a>
+            </li>
+              <li class="nav-item">
+                <a href="{{ url_for('reports_view') }}" class="nav-link {% if request.endpoint == 'reports_view' %}active{% endif %}">
+                  <i class="fa-solid fa-file-medical"></i>
+                  <span>Reports</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('settings_view') }}" class="nav-link {% if request.endpoint == 'settings_view' %}active{% endif %}">
+                  <i class="fa-solid fa-gear"></i>
+                  <span>Settings</span>
+                </a>
+              </li>
+            
+{% else %}
+            <!-- Default -->
+            <li class="nav-item">
+              <a href="{{ url_for('dashboard_view') }}" class="nav-link">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="db-status-badge">
+            <span class="status-indicator online"></span>
+            <span class="db-label">{{ db_engine }}</span>
+          </div>
+          <a href="{{ url_for('logout_view') }}" class="btn-logout" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Content Container -->
+      <div class="app-main">
+        
+        <!-- Top App Header -->
+        <header class="app-header">
+          <div class="header-left">
+            <button class="btn-sidebar-toggle d-lg-none" id="sidebarToggleBtn" aria-label="Toggle Sidebar">
+              <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="header-greeting">
+              <h1 class="page-title">{% block header_title %}CarePulse Dashboard{% endblock %}</h1>
+              <p class="page-subtitle">{% block header_subtitle %}Every heartbeat, watched over.{% endblock %}</p>
+            </div>
+          </div>
+
+          <div class="header-right">
+            <!-- Global Hardware / Demo Status Indicator -->
+            <div class="demo-banner-pill {% if is_hardware_connected %}bg-success-subtle border-success-subtle text-success{% endif %}" id="globalDemoPill">
+              {% if is_hardware_connected %}
+                <span class="demo-dot" style="background: #10B981;"></span>
+                <span class="demo-text text-success fw-bold"><i class="fa-solid fa-wifi me-1"></i> LIVE HARDWARE (ESP32)</span>
+              {% else %}
+                <span class="demo-dot"></span>
+                <span class="demo-text">🟡 AWAITING ESP32</span>
+              {% endif %}
+            </div>
+
+            <!-- Notifications Bell with Dropdown -->
+            <div class="dropdown notification-dropdown">
+              <button class="btn-icon header-btn" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-regular fa-bell"></i>
+                {% if active_alerts_count > 0 %}
+                  <span class="notif-badge" id="headerAlertDot"></span>
+                {% endif %}
+              </button>
+              <div class="dropdown-menu dropdown-menu-end notif-menu shadow-lg" aria-labelledby="notifDropdownBtn">
+                <div class="notif-header">
+                  <span class="fw-bold">Notifications</span>
+                  <a href="{{ url_for('alerts_view') }}" class="small text-teal">View All</a>
+                </div>
+                <div class="notif-list" id="headerNotifList">
+                  {% if active_alerts_count > 0 %}
+                    <div class="notif-item critical">
+                      <i class="fa-solid fa-circle-exclamation text-danger"></i>
+                      <div>
+                        <div class="notif-title">{{ active_alerts_count }} Active Alert(s)</div>
+                        <div class="notif-desc">Threshold breach monitored</div>
+                      </div>
+                    </div>
+                  {% else %}
+                    <div class="notif-empty">
+                      <i class="fa-solid fa-circle-check text-teal fs-3 mb-2"></i>
+                      <p class="mb-0 text-muted small">No active abnormal alerts</p>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- User Menu Dropdown -->
+            <div class="dropdown user-dropdown">
+              <button class="btn-user-menu" id="userMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="avatar-small">
+                  {{ current_user_name[:2].upper() }}
+                </div>
+                <span class="user-display-name d-none d-md-inline">{{ current_user_name.split(' ')[0] }}</span>
+                <i class="fa-solid fa-chevron-down small text-muted ms-1"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuBtn">
+                <li><a class="dropdown-item" href="{{ url_for('profile_view') }}"><i class="fa-regular fa-user me-2"></i>My Profile</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('settings_view') }}"><i class="fa-solid fa-gear me-2"></i>Settings</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{{ url_for('logout_view') }}"><i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out</a></li>
+              </ul>
+            </div>
+          </div>
+        </header>
+
+        <!-- Flash Messages -->
+        <div class="container-fluid px-4 pt-3">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                  <i class="fa-solid {% if category=='success' %}fa-circle-check{% elif category=='danger' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %} me-2"></i>
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+        </div>
+
+        <!-- Main Body Page Content -->
+        <main class="app-content container-fluid px-4 py-3">
+          {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+          <div class="footer-container">
+            <div>
+              <strong>CarePulse</strong> — IoT-Based Healthcare Monitoring System (Academic Project)
+            </div>
+            <div class="footer-disclaimer">
+              "CarePulse is an academic monitoring project and is not a substitute for professional medical diagnosis or treatment."
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Toast Notification Container for Real-Time Alerts -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="carepulseToastContainer" style="z-index: 1100;"></div>
+
+  <!-- Audio Chime for Critical Alerts (synthesized via Web Audio API) -->
+
+  <!-- Bootstrap 5.3 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Chart.js 4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Global App Scripts -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

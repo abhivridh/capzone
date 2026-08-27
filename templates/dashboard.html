@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — CarePulse{% endblock %}
+
+{% block header_title %}
+Hello, {{ patient.name if patient else current_user_name }}
+{% endblock %}
+
+{% block header_subtitle %}
+How are you feeling today?
+{% endblock %}
+
+{% block content %}
+<input type="hidden" id="dashboardActivePatientId" value="{{ patient.patient_id if patient else 'P001' }}">
+
+<!-- HARDWARE DEVICE CONNECTION STATUS BANNER -->
+<div class="card border-0 shadow-sm mb-4 rounded-3" id="deviceConnectionBanner" style="background: #ffffff; border: 1px solid #e2e8f0;">
+  <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="rounded-circle d-flex align-items-center justify-content-center" id="connectionStatusIconBox" style="width: 44px; height: 44px; background: {% if is_hardware_connected %}#dcfce7{% else %}#f1f5f9{% endif %};">
+        <i class="fa-solid {% if is_hardware_connected %}fa-wifi text-success{% else %}fa-microchip text-secondary{% endif %} fs-5" id="connectionStatusIcon"></i>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge {% if is_hardware_connected %}bg-success{% else %}bg-secondary{% endif %}" id="deviceStatusBadge">
+            {% if is_hardware_connected %}Connected &bull; Live{% else %}No device connected{% endif %}
+          </span>
+          <strong class="text-dark" id="deviceStatusHeading">
+            {% if is_hardware_connected %}ESP32-001 Streaming Live Telemetry{% else %}Waiting for ESP32 Device...{% endif %}
+          </strong>
+        </div>
+        <div class="text-muted small mt-1" id="deviceStatusSubtext">
+          {% if is_hardware_connected %}
+            <span class="text-success fw-semibold"><i class="fa-solid fa-circle-dot fa-fade me-1"></i>Receiving active health packets (&le;10s freshness)</span>
+          {% else %}
+            <span>Send telemetry packets from your ESP32 to <code>POST /api/sensor-data</code>.</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="text-end">
+      <div class="small text-muted" id="lastSeenStatus">
+        Last packet: <strong id="lastSeenTimestamp">{% if latest and latest.timestamp %}{{ latest.timestamp }}{% else %}None yet{% endif %}</strong>
+      </div>
+      <div class="badge {% if is_hardware_connected %}bg-success-subtle text-success border border-success-subtle{% else %}bg-light text-secondary border{% endif %} small mt-1" id="freshnessCountdown">
+        {% if is_hardware_connected %}Live: Fresh (&le;10s){% else %}Offline &bull; No active data{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- CAMERA BROADCAST SETTINGS (For Remote Home Care Monitoring) -->
+<div class="carepulse-card p-4 mb-4 border-start border-4 border-info">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="fw-bold text-dark mb-1"><i class="fa-solid fa-video text-info me-2"></i>Remote Video Monitoring (Opt-In)</h5>
+      <p class="text-secondary small mb-0"><span class="text-danger fw-bold"><i class="fa-solid fa-lock me-1"></i> Managed by Administrator.</span> For your safety while critically ill, camera access is granted only by verified hospital admins.</p>
+    </div>
+    <div>
+      <div class="form-check form-switch" style="font-size: 1.5rem;">
+        <input class="form-check-input" type="checkbox" role="switch" id="cameraBroadcastSwitch" disabled {% if patient and patient.camera_enabled %}checked{% endif %}>
+      </div>
+      <span class="small text-muted fw-bold d-block text-center mt-1" id="broadcastStatusText">BROADCASTING</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const camSwitch = document.getElementById('cameraBroadcastSwitch');
+    const camText = document.getElementById('broadcastStatusText');
+    if(camSwitch) {
+      camSwitch.addEventListener('change', function() {
+        const isChecked = this.checked;
+        if(isChecked) {
+          camText.innerText = "BROADCASTING";
+          camText.className = "small text-info fw-bold d-block text-center mt-1";
+        } else {
+          camText.innerText = "DISABLED";
+          camText.className = "small text-secondary fw-bold d-block text-center mt-1";
+        }
+        
+        fetch('/api/toggle-camera', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({enabled: isChecked})
+        });
+      });
+      // Initial text setup
+      if(!camSwitch.checked) {
+          camText.innerText = "DISABLED";
+          camText.className = "small text-secondary fw-bold d-block text-center mt-1";
+      }
+    }
+  });
+</script>
+
+<!-- TODAY'S HEALTH SUMMARY CARD -->
+<div class="summary-banner-card" id="summaryBannerCard">
+  <div class="summary-left">
+    <div class="summary-badge-icon" id="summaryBadgeIcon">
+      <i class="fa-solid {% if is_hardware_connected %}fa-heart-pulse{% else %}fa-satellite-dish{% endif %}"></i>
+    </div>
+    <div>
+      <div class="small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em;">TODAY'S HEALTH SUMMARY</div>
+      <h3 class="summary-title mb-1" id="summaryTitle">
+        {% if is_hardware_connected %}Vital Signs Within Target Baseline{% else %}Awaiting Device Data Stream{% endif %}
+      </h3>
+      <p class="summary-desc mb-0" id="summaryDesc">
+        {% if is_hardware_connected %}All monitored values are currently within the configured monitoring range.{% else %}No live data received. Connect ESP32 hardware to monitor vitals.{% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="text-end">
+    <span class="summary-status-pill {% if is_hardware_connected %}normal{% else %}bg-secondary text-white border-0{% endif %}" id="summaryStatusPill">
+      {% if is_hardware_connected %}NORMAL{% else %}WAITING{% endif %}
+    </span>
+  </div>
+</div>
+
+<!-- 4 LIVE VITAL CARDS -->
+<div class="row g-4 mb-4">
+  
+  <!-- 1. HEART RATE -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="vital-card h-100">
+      <div class="vital-card-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="vital-icon-box hr">
+            <i class="fa-solid fa-heart-pulse" id="hrPulseIcon" style="{% if is_hardware_connected %}animation: pulseBeat 1.4s infinite ease-in-out;{% endif %}"></i>
+          </div>
+          <h5 class="vital-title">HEART RATE</h5>
+        </div>
+        <span class="vital-badge-status {% if is_hardware_connected %}normal{% else %}bg-light text-muted border{% endif %}" id="badgeHeartRate">
+          {% if is_hardware_connected %}Normal{% else %}Offline{% endif %}
+        </span>
+      </div>
+
+      <div class="vital-value-row">
+        <span class="vital-value" id="valHeartRate">{% if is_hardware_connected and latest %}{{ (latest.heart_rate | round | int) if latest else "--" }}{% else %}--{% endif %}</span>
+        <span class="vital-unit">BPM</span>
+      </div>
+
+      <!-- Mini Live ECG Wave Canvas -->
+      <div class="mini-trend-box">
+        <canvas id="dashboardEcgCanvas" height="40"></canvas>
+      </div>
+
+      <div class="vital-last-updated">
+        <span class="reading-update-time" id="timeHeartRate" data-timestamp="{{ latest.timestamp if (latest and is_hardware_connected) else '' }}">
+          {% if is_hardware_connected %}Live stream{% else %}No live data{% endif %}
+        </span>
+        <span id="sourceBadgeHr">
+          {% if is_hardware_connected %}
+            <span class="badge bg-success text-white"><i class="fa-solid fa-wifi me-1"></i>ESP32 LIVE</span>
+          {% else %}
+            <span class="badge bg-light text-muted border">WAITING</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. SpO2 -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="vital-card h-100">
+      <div class="vital-card-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="vital-icon-box spo2">
+            <i class="fa-solid fa-droplet"></i>
+          </div>
+          <h5 class="vital-title">OXYGEN (SpO₂)</h5>
+        </div>
+        <span class="vital-badge-status {% if is_hardware_connected %}normal{% else %}bg-light text-muted border{% endif %}" id="badgeSpO2">
+          {% if is_hardware_connected %}Normal{% else %}Offline{% endif %}
+        </span>
+      </div>
+
+      <div class="vital-value-row">
+        <span class="vital-value" id="valSpO2">{% if is_hardware_connected and latest %}{{ (latest.spo2 | round | int) if latest else "--" }}{% else %}--{% endif %}</span>
+        <span class="vital-unit">%</span>
+      </div>
+
+      <!-- Mini SVG Sparkline -->
+      <div class="mini-trend-box d-flex align-items-center">
+        <svg width="100%" height="32" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <polyline points="0,16 15,14 30,12 45,15 60,11 75,13 90,12 100,14" fill="none" stroke="#17B6C4" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="vital-last-updated">
+        <span class="reading-update-time" id="timeSpO2" data-timestamp="{{ latest.timestamp if (latest and is_hardware_connected) else '' }}">
+          {% if is_hardware_connected %}Live stream{% else %}No live data{% endif %}
+        </span>
+        <span id="sourceBadgeSpo2">
+          {% if is_hardware_connected %}
+            <span class="badge bg-success text-white"><i class="fa-solid fa-wifi me-1"></i>ESP32 LIVE</span>
+          {% else %}
+            <span class="badge bg-light text-muted border">WAITING</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. TEMPERATURE -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="vital-card h-100">
+      <div class="vital-card-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="vital-icon-box temp">
+            <i class="fa-solid fa-temperature-half"></i>
+          </div>
+          <h5 class="vital-title">TEMPERATURE</h5>
+        </div>
+        <span class="vital-badge-status {% if is_hardware_connected %}normal{% else %}bg-light text-muted border{% endif %}" id="badgeTemp">
+          {% if is_hardware_connected %}Normal{% else %}Offline{% endif %}
+        </span>
+      </div>
+
+      <div class="vital-value-row">
+        <span class="vital-value" id="valTemp">{% if is_hardware_connected and latest %}{{ latest.temperature }}{% else %}--{% endif %}</span>
+        <span class="vital-unit">°C</span>
+      </div>
+
+      <!-- Mini SVG Sparkline -->
+      <div class="mini-trend-box d-flex align-items-center">
+        <svg width="100%" height="32" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <polyline points="0,14 20,13 40,15 60,12 80,14 100,13" fill="none" stroke="#E08E24" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="vital-last-updated">
+        <span class="reading-update-time" id="timeTemp" data-timestamp="{{ latest.timestamp if (latest and is_hardware_connected) else '' }}">
+          {% if is_hardware_connected %}Live stream{% else %}No live data{% endif %}
+        </span>
+        <span id="sourceBadgeTemp">
+          {% if is_hardware_connected %}
+            <span class="badge bg-success text-white"><i class="fa-solid fa-wifi me-1"></i>ESP32 LIVE</span>
+          {% else %}
+            <span class="badge bg-light text-muted border">WAITING</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. DEVICE STATUS -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="vital-card h-100">
+      <div class="vital-card-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="vital-icon-box device">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <h5 class="vital-title">DEVICE STATUS</h5>
+        </div>
+        <span id="deviceCardBadgeWrap">
+          <span class="badge {% if is_hardware_connected %}bg-success{% else %}bg-secondary{% endif %}" id="deviceCardBadge">
+            {% if is_hardware_connected %}<i class="fa-solid fa-wifi me-1"></i>CONNECTED{% else %}OFFLINE{% endif %}
+          </span>
+        </span>
+      </div>
+
+      <div class="vital-value-row">
+        <span class="vital-value fs-4" id="valDeviceStatus">ESP32-001</span>
+      </div>
+      <div class="text-secondary small mb-2">
+        Status: <span id="deviceStatusText">
+          {% if is_hardware_connected %}
+            <strong class="text-success">🟢 Connected (Live Telemetry)</strong>
+          {% else %}
+            <strong class="text-secondary">⚪ No device connected</strong>
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="mini-trend-box d-flex align-items-center" id="deviceModeSubtext">
+        {% if is_hardware_connected %}
+          <span class="small text-success fw-bold"><i class="fa-solid fa-signal me-1"></i> Streaming physical sensor data</span>
+        {% else %}
+          <span class="small text-muted fst-italic">Waiting for ESP32 telemetry (&le;10s)</span>
+        {% endif %}
+      </div>
+
+      <div class="vital-last-updated">
+        <span>Assigned: Patient {{ patient.patient_id if patient else 'P001' }}</span>
+        <a href="{{ url_for('devices_view') }}" class="text-teal small fw-bold">Manage</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- QUICK ACTION SECTIONS -->
+<div class="row g-4">
+  <!-- Recent Alerts List -->
+  <div class="col-lg-7">
+    <div class="carepulse-card h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+        <div>
+          <h5 class="fw-bold mb-0"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Recent System Alerts</h5>
+          <span class="text-muted small">Generated by project monitoring thresholds</span>
+        </div>
+        <a href="{{ url_for('alerts_view') }}" class="btn btn-sm btn-outline-secondary rounded-pill">View All Alerts</a>
+      </div>
+
+      <div class="alert-list-container">
+        {% if recent_alerts %}
+          {% for a in recent_alerts %}
+            <div class="alert-card-item {{ a.severity.lower() }} {% if a.status == 'Resolved' %}resolved{% endif %}" id="dashAlert_{{ a.id }}">
+              <div class="alert-item-icon {{ a.severity.lower() }}">
+                <i class="fa-solid {% if a.severity=='Critical' %}fa-triangle-exclamation text-danger{% else %}fa-circle-exclamation text-warning{% endif %}"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center justify-content-between">
+                  <strong class="text-dark">{{ a.sensor_type }}: {{ a.message }}</strong>
+                  <span class="badge {% if a.status=='Active' %}bg-danger{% else %}bg-success{% endif %}">{{ a.status }}</span>
+                </div>
+                <div class="text-muted small mt-1">
+                  Recorded: {{ a.created_at }} &bull; Patient: {{ a.patient_id }} &bull; Severity: <strong>{{ a.severity }}</strong>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center py-4 text-muted">
+            <i class="fa-solid fa-circle-check text-teal fs-2 mb-2"></i>
+            <p class="mb-0">No recent alerts recorded. All monitored values are normal.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Patient & Future IoT Architecture Summary -->
+  <div class="col-lg-5">
+    <div class="carepulse-card h-100">
+      <h5 class="fw-bold mb-3 pb-2 border-bottom"><i class="fa-solid fa-hospital-user text-teal me-2"></i>Active Patient Telemetry</h5>
+      
+      <div class="p-3 bg-light rounded-3 mb-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="user-avatar" style="width: 46px; height: 46px; font-size: 1.1rem;">
+            {{ patient.name[:2].upper() if patient else 'UP' }}
+          </div>
+          <div>
+            <h6 class="fw-bold mb-0">{{ patient.name if patient else 'Unknown Patient' }}</h6>
+            <span class="text-muted small">ID: {{ patient.patient_id if patient else 'N/A' }} &bull; Age: {{ patient.age if patient else 'N/A' }} yrs &bull; {{ patient.gender if patient else 'N/A' }}</span>
+          </div>
+          <a href="{{ url_for('profile_view') }}" class="btn btn-sm btn-outline-primary ms-auto rounded-pill">Profile</a>
+        </div>
+      </div>
+
+      <h6 class="fw-bold small text-uppercase text-secondary mt-3 mb-2">Next Steps for IoT Hardware Integration:</h6>
+      <ul class="list-unstyled small text-secondary mb-3">
+        <li class="mb-2"><i class="fa-solid fa-circle-check text-teal me-2"></i><strong>Endpoint is ready:</strong> <code>POST /api/sensor-data</code></li>
+        <li class="mb-2"><i class="fa-solid fa-circle-check text-teal me-2"></i><strong>Accepted format:</strong> JSON with <code>heart_rate</code>, <code>spo2</code>, <code>temperature</code></li>
+        <li class="mb-2"><i class="fa-solid fa-circle-check text-teal me-2"></i><strong>Zero frontend rebuild:</strong> Switching from DEMO to ESP32 is seamless!</li>
+      </ul>
+
+      <div class="d-grid gap-2">
+        <a href="{{ url_for('monitoring_view') }}" class="btn btn-carepulse-primary text-center justify-content-center">
+          <i class="fa-solid fa-heart-circle-bolt me-1"></i> Open Full Live Monitoring
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

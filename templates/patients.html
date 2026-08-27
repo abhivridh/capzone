@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Patients — CarePulse{% endblock %}
+
+{% block header_title %}
+Patient Directory
+{% endblock %}
+
+{% block header_subtitle %}
+Manage and monitor connected patients across care facilities.
+{% endblock %}
+
+{% block content %}
+<div class="carepulse-card mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3 flex-grow-1" style="max-width: 500px;">
+      <div class="input-group">
+        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+        <input type="text" class="form-control border-start-0" id="patientSearchInput" placeholder="Search by name or ID...">
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-carepulse-primary" data-bs-toggle="modal" data-bs-target="#addPatientModal">
+        <i class="fa-solid fa-user-plus me-1"></i> ADD PATIENT
+      </button>
+    </div>
+  </div>
+
+  <!-- Patients Table -->
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="patientsTable">
+      <thead class="table-light">
+        <tr>
+          <th>Patient ID</th>
+          <th>Name</th>
+          <th>Age / Gender</th>
+          <th>Heart Rate</th>
+          <th>SpO₂</th>
+          <th>Temperature</th>
+          <th>Device Status</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+        <tr class="patient-row">
+          <td><span class="badge bg-light text-dark border fw-bold">{{ p.patient_id }}</span></td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                {{ p.name[:2].upper() }}
+              </div>
+              <div>
+                <a href="{{ url_for('profile_view', patient_id=p.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                  {{ p.name }}
+                </a>
+                <div class="text-muted small">{{ p.phone }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ p.age }} yrs / {{ p.gender }}</td>
+          <td>
+            <span class="fw-bold text-danger">{{ p.heart_rate | round | int if p.heart_rate else 76 }}</span> <small class="text-muted">BPM</small>
+          </td>
+          <td>
+            <span class="fw-bold text-info" style="color: var(--bright) !important;">{{ p.spo2 | round | int if p.spo2 else 98 }}</span> <small class="text-muted">%</small>
+          </td>
+          <td>
+            <span class="fw-bold text-warning" style="color: #E08E24 !important;">{{ p.temperature if p.temperature else 36.7 }}</span> <small class="text-muted">°C</small>
+          </td>
+          <td>
+            <span class="badge {% if p.device_status == 'CONNECTED' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+              {{ p.device_status or 'OFFLINE' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">Stable</span>
+          </td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a href="{{ url_for('profile_view', patient_id=p.patient_id) }}" class="btn btn-outline-primary" title="View Patient Details">
+                <i class="fa-solid fa-eye me-1"></i> VIEW
+              </a>
+              <a href="{{ url_for('monitoring_view') }}?patient_id={{ p.patient_id }}" class="btn btn-outline-teal" style="color: var(--mid); border-color: var(--mid);" title="Live Monitor">
+                <i class="fa-solid fa-heart-pulse"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Add Patient -->
+<div class="modal fade" id="addPatientModal" tabindex="-1" aria-labelledby="addPatientModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg);">
+      <div class="modal-header" style="background: var(--deep); color: #ffffff;">
+        <h5 class="modal-title fw-bold" id="addPatientModalLabel"><i class="fa-solid fa-user-plus me-2"></i>Add New Patient</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="addPatientForm">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Patient ID (e.g. P004)</label>
+            <input type="text" class="form-control" id="newPatientId" required placeholder="P004">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Full Name</label>
+            <input type="text" class="form-control" id="newPatientName" required placeholder="Patient Full Name">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold">Age</label>
+              <input type="number" class="form-control" id="newPatientAge" required min="1" max="120" value="50">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">Gender</label>
+              <select class="form-select" id="newPatientGender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Phone</label>
+            <input type="tel" class="form-control" id="newPatientPhone" required placeholder="+1 555-0199">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Emergency Contact</label>
+            <input type="text" class="form-control" id="newPatientEmergency" required placeholder="Name & Phone Number">
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="background: var(--mid); border: none;">
+            SAVE PATIENT
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Simple Table Search
+  const searchInput = document.getElementById('patientSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      document.querySelectorAll('#patientsTable tbody tr').forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        tr.style.display = text.includes(term) ? '' : 'none';
+      });
+    });
+  }
+
+  // Add Patient AJAX Form
+  const addForm = document.getElementById('addPatientForm');
+  if (addForm) {
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        patient_id: document.getElementById('newPatientId').value,
+        name: document.getElementById('newPatientName').value,
+        age: document.getElementById('newPatientAge').value,
+        gender: document.getElementById('newPatientGender').value,
+        phone: document.getElementById('newPatientPhone').value,
+        emergency_contact: document.getElementById('newPatientEmergency').value
+      };
+
+      try {
+        const res = await fetch('/api/patients', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('Patient registered successfully!');
+          window.location.reload();
+        } else {
+          alert('Error: ' + json.message);
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+      }
+    });
+  }
+</script>
+{% endblock %}

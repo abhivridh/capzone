@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Profile — CarePulse{% endblock %}
+
+{% block header_title %}
+Patient Profile Record
+{% endblock %}
+
+{% block header_subtitle %}
+Clinical demographic details, emergency telemetry contacts, and assigned hardware units.
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Left Profile Card -->
+  <div class="col-lg-4">
+    <div class="carepulse-card text-center p-4">
+      <div class="user-avatar mx-auto mb-3" style="width: 84px; height: 84px; font-size: 2.2rem; box-shadow: 0 8px 20px rgba(23,182,196,0.35);">
+        {{ patient.name[:2].upper() if patient else 'DP' }}
+      </div>
+      <h4 class="fw-bold mb-1">{{ patient.name if patient else 'Unknown Patient' }}</h4>
+      <span class="badge bg-light text-dark border mb-3">Patient ID: {{ patient.patient_id if patient else 'P001' }}</span>
+      
+      <div class="d-flex justify-content-center gap-2 mb-3">
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+          <i class="fa-solid fa-circle text-success me-1" style="font-size: 0.6rem;"></i> Active Monitoring
+        </span>
+      </div>
+
+      <button class="btn btn-outline-teal w-100 rounded-pill" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+        <i class="fa-regular fa-pen-to-square me-1"></i> EDIT PROFILE
+      </button>
+    </div>
+  </div>
+
+  <!-- Right Details Cards -->
+  <div class="col-lg-8">
+    <div class="carepulse-card p-4 mb-4">
+      <h5 class="fw-bold mb-3 pb-2 border-bottom"><i class="fa-solid fa-address-card text-teal me-2"></i>Demographic & Contact Information</h5>
+      
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <span class="small text-muted d-block">Full Name</span>
+          <strong class="fs-6 text-dark">{{ patient.name if patient else 'Unknown Patient' }}</strong>
+        </div>
+        <div class="col-sm-6">
+          <span class="small text-muted d-block">Patient ID</span>
+          <strong class="fs-6 text-dark">{{ patient.patient_id if patient else 'N/A' }}</strong>
+        </div>
+        <div class="col-sm-6">
+          <span class="small text-muted d-block">Age</span>
+          <strong class="fs-6 text-dark">{{ patient.age if patient else 'N/A' }} years</strong>
+        </div>
+        <div class="col-sm-6">
+          <span class="small text-muted d-block">Gender</span>
+          <strong class="fs-6 text-dark">{{ patient.gender if patient else 'N/A' }}</strong>
+        </div>
+        <div class="col-sm-6">
+          <span class="small text-muted d-block">Phone Number</span>
+          <strong class="fs-6 text-dark">{{ patient.phone if patient else 'N/A' }}</strong>
+        </div>
+        <div class="col-sm-6">
+          <span class="small text-muted d-block">Primary Email</span>
+          <strong class="fs-6 text-dark">N/A</strong>
+        </div>
+        <div class="col-12">
+          <span class="small text-muted d-block">Emergency Contact</span>
+          <strong class="fs-6 text-danger">{{ patient.emergency_contact if patient else 'N/A' }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assigned Device Card -->
+    <div class="carepulse-card p-4">
+      <h5 class="fw-bold mb-3 pb-2 border-bottom"><i class="fa-solid fa-microchip text-teal me-2"></i>Assigned IoT Device</h5>
+      
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 bg-light rounded-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="vital-icon-box device">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <div>
+            <h6 class="fw-bold mb-0">{{ device.device_name if device else 'CarePulse ESP32' }}</h6>
+            <span class="text-muted small">Device ID: <code>{{ device.device_id if device else 'ESP32-001' }}</code></span>
+          </div>
+        </div>
+        <div>
+          <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+            🟡 NOT CONNECTED
+          </span>
+        </div>
+      </div>
+
+      <div class="mt-3 text-secondary small">
+        <i class="fa-solid fa-circle-info text-teal me-1"></i>
+        Physical hardware ESP32 integration will automatically activate when real sensor packets are streamed to <code>POST /api/sensor-data</code>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Profile -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg);">
+      <div class="modal-header" style="background: var(--deep); color: #ffffff;">
+        <h5 class="modal-title fw-bold" id="editProfileModalLabel"><i class="fa-solid fa-user-pen me-2"></i>Edit Patient Profile</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="editProfileForm">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Full Name</label>
+            <input type="text" class="form-control" id="editName" value="{{ patient.name if patient else '' }}" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold">Age</label>
+              <input type="number" class="form-control" id="editAge" value="{{ patient.age if patient else '' }}" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">Gender</label>
+              <select class="form-select" id="editGender">
+                <option value="Male" {% if patient and patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                <option value="Female" {% if patient and patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                <option value="Other" {% if patient and patient.gender == 'Other' %}selected{% endif %}>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Phone</label>
+            <input type="tel" class="form-control" id="editPhone" value="{{ patient.phone if patient else '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Emergency Contact</label>
+            <input type="text" class="form-control" id="editEmergency" value="{{ patient.emergency_contact if patient else '' }}" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="background: var(--mid); border: none;">
+            SAVE CHANGES
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const editForm = document.getElementById('editProfileForm');
+  if (editForm) {
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const patientId = "{{ patient.patient_id if patient else 'P001' }}";
+      const payload = {
+        name: document.getElementById('editName').value,
+        age: document.getElementById('editAge').value,
+        gender: document.getElementById('editGender').value,
+        phone: document.getElementById('editPhone').value,
+        emergency_contact: document.getElementById('editEmergency').value
+      };
+
+      try {
+        const res = await fetch(`/api/patients/${patientId}`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('Profile updated successfully!');
+          window.location.reload();
+        } else {
+          alert('Error: ' + json.message);
+        }
+      } catch (err) {
+        alert('Network error.');
+      }
+    });
+  }
+</script>
+{% endblock %}

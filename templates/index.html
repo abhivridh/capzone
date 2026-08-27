@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}CarePulse - Every heartbeat, watched over.{% endblock %}
+
+{% block public_content %}
+<!-- Public Landing Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark" style="background: var(--deep); border-bottom: 1px solid rgba(255,255,255,0.1);">
+  <div class="container py-2">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home_view') }}">
+      <div class="brand-icon">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">CAREPULSE</span>
+        <span class="brand-sub">HEALTHCARE IoT</span>
+      </div>
+    </a>
+    
+    <div class="d-flex align-items-center gap-2 ms-auto">
+      <a href="{{ url_for('patient_login_view') }}" class="btn btn-info btn-sm px-3 rounded-pill fw-bold text-dark shadow-sm">
+        <i class="fa-solid fa-right-to-bracket me-1"></i> Sign In / Login
+      </a>
+      <div class="dropdown">
+        <button class="btn btn-outline-info btn-sm px-3 rounded-pill dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Portals
+        </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
+                <li><a class="dropdown-item py-2" href="{{ url_for('doctor_login_view') }}"><i class="fa-solid fa-user-doctor me-2 text-primary"></i>Doctor Portal</a></li>
+        <li><a class="dropdown-item py-2" href="{{ url_for('caregiver_login_view') }}"><i class="fa-solid fa-user-shield me-2 text-teal"></i>Caregiver Portal</a></li>
+          <li><a class="dropdown-item py-2" href="{{ url_for('family_bp.family_login') }}"><i class="fa-solid fa-users me-2 text-warning"></i>Family Portal</a></li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<div class="hero-section text-center text-md-start">
+  <div class="container h-100 position-relative z-1">
+    <div class="row h-100 align-items-center">
+      
+      <!-- Text Content -->
+      <div class="col-md-7 col-lg-6 hero-text-col">
+        <div class="hero-badge mb-3">
+          <i class="fa-solid fa-satellite-dish me-2"></i> IoT Vitals Tracking
+        </div>
+        
+        <h1 class="hero-title mb-3">
+          Every heartbeat,<br>watched over.
+        </h1>
+        
+        <p class="hero-subtitle mb-4">
+          Empowering elderly care through continuous remote monitoring. Connect your MAX30102 and DS18B20 directly to the CarePulse cloud.
+        </p>
+
+        <div class="hero-buttons d-flex flex-wrap gap-2">
+            <a href="{{ url_for('patient_login_view') }}" class="btn btn-info px-4 py-2 fw-bold text-dark shadow-lg" style="border-radius: var(--radius-sm);">
+              <i class="fa-solid fa-right-to-bracket me-1"></i> SIGN IN TO ACCOUNT
+            </a>
+            <button type="button" class="btn btn-danger px-3 py-2 fw-bold text-white shadow-lg pulse-alert" style="animation: pulse 2s infinite; border-radius: var(--radius-sm);" data-bs-toggle="modal" data-bs-target="#emergencyModal" onclick="loadEmergencyPatients()">
+              <i class="fa-solid fa-truck-medical me-1"></i> EMERGENCY ACCESS
+            </button>
+
+            <a href="{{ url_for('doctor_login_view') }}" class="btn btn-light px-3 py-2 fw-bold text-dark" style="border-radius: var(--radius-sm);">
+              <i class="fa-solid fa-user-doctor me-1"></i> Doctor Portal
+            </a>
+            <a href="{{ url_for('caregiver_login_view') }}" class="btn btn-outline-light px-3 py-2 fw-bold" style="border-radius: var(--radius-sm);">
+              <i class="fa-solid fa-user-shield me-1"></i> Caregiver Portal
+            </a>
+            
+          </div>
+      </div>
+      <div class="col-lg-5 text-center">
+        <!-- Heart & Pulse Graphic -->
+        <div class="position-relative d-inline-block">
+          <div style="width: 280px; height: 280px; border-radius: 50%; background: radial-gradient(circle, rgba(23,182,196,0.2) 0%, rgba(6,58,82,0) 70%); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+            <div style="width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 2px dashed rgba(111,224,230,0.3); display: flex; align-items: center; justify-content: center;">
+              <i class="fa-solid fa-heart text-pulse-pink" style="font-size: 5.5rem; color: var(--pulse-pink); animation: pulseBeat 1.4s infinite ease-in-out; filter: drop-shadow(0 10px 20px rgba(255,92,122,0.4));"></i>
+            </div>
+          </div>
+          <div class="badge bg-white text-dark shadow-sm px-3 py-2 rounded-pill position-absolute" style="bottom: 10px; left: 50%; transform: translateX(-50%); font-weight: 700; white-space: nowrap;">
+            <i class="fa-solid fa-circle text-success me-1" style="font-size: 0.65rem;"></i> Real-time sensor monitoring
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ECG Animated Line Banner -->
+    <div class="ecg-graphic-container">
+      <svg class="ecg-svg" viewBox="0 0 1000 60" preserveAspectRatio="none">
+        <path class="ecg-path" d="M0,30 L160,30 L180,30 L195,15 L210,50 L225,5 L240,40 L255,30 L400,30 L420,30 L435,15 L450,50 L465,5 L480,40 L495,30 L640,30 L660,30 L675,15 L690,50 L705,5 L720,40 L735,30 L880,30 L900,30 L915,15 L930,50 L945,5 L960,40 L975,30 L1000,30" />
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- Three Core Feature Cards -->
+<section class="py-5">
+  <div class="container py-4">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold mb-2">Monitor. Understand. Respond.</h2>
+      <p class="text-secondary mx-auto" style="max-width: 600px;">CarePulse delivers end-to-end telemetry from patient sensors to intuitive clinical dashboards with proactive alerts.</p>
+    </div>
+
+    <div class="row g-4">
+      <!-- Feature 1 -->
+      <div class="col-md-4">
+        <div class="carepulse-card h-100 p-4">
+          <div class="vital-icon-box hr mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+            <i class="fa-solid fa-heart-pulse"></i>
+          </div>
+          <h4 class="fw-bold mb-2">1. Real-Time Monitoring</h4>
+          <p class="text-secondary mb-0">
+            Continuous telemetry of Heart Rate (BPM), Blood Oxygen Saturation (SpO₂), and Core Body Temperature (°C) with live oscilloscope ECG wave rendering.
+          </p>
+        </div>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="col-md-4">
+        <div class="carepulse-card h-100 p-4">
+          <div class="vital-icon-box spo2 mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <h4 class="fw-bold mb-2">2. Health Analytics</h4>
+          <p class="text-secondary mb-0">
+            Interactive multi-day trend graphs, rolling averages, circadian baseline comparisons, and printer-ready medical summary reports.
+          </p>
+        </div>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="col-md-4">
+        <div class="carepulse-card h-100 p-4">
+          <div class="vital-icon-box temp mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+          <h4 class="fw-bold mb-2">3. Smart Alerts</h4>
+          <p class="text-secondary mb-0">
+            Configurable project thresholds categorize vitals into Normal, Warning, and Critical states with intelligent alert deduplication and auditory chimes.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Visual Flow Diagram: "How CarePulse Works" -->
+<section class="py-5" style="background: #ffffff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+  <div class="container py-4">
+    <div class="text-center mb-5">
+      <span class="badge px-3 py-2 rounded-pill mb-2" style="background: #E3F6F6; color: var(--mid); font-weight: 700;">SYSTEM ARCHITECTURE</span>
+      <h2 class="fw-bold mb-2">How CarePulse Works</h2>
+      <p class="text-secondary">Connected telemetry flow from physiological sensors to the CarePulse web platform.</p>
+    </div>
+
+    <!-- Visual Architecture Steps -->
+    <div class="row g-3 text-center align-items-center justify-content-center">
+      <div class="col-6 col-md-2">
+        <div class="p-3 bg-light rounded-4 border">
+          <div class="fs-2 text-primary mb-2"><i class="fa-solid fa-hand-holding-medical"></i></div>
+          <div class="fw-bold small">HEALTH SENSORS</div>
+          <div class="text-muted" style="font-size: 0.72rem;">Pulse, SpO2, Temp</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-1 d-none d-md-block text-secondary fs-4">
+        <i class="fa-solid fa-arrow-right text-teal"></i>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-3 bg-light rounded-4 border">
+          <div class="fs-2 text-warning mb-2"><i class="fa-solid fa-microchip"></i></div>
+          <div class="fw-bold small">ESP32</div>
+          <div class="text-muted" style="font-size: 0.72rem;">Microcontroller</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-1 d-none d-md-block text-secondary fs-4">
+        <i class="fa-solid fa-arrow-right text-teal"></i>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-3 bg-light rounded-4 border">
+          <div class="fs-2 text-info mb-2"><i class="fa-solid fa-wifi"></i></div>
+          <div class="fw-bold small">Wi-Fi HTTP</div>
+          <div class="text-muted" style="font-size: 0.72rem;">REST Ingestion API</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-1 d-none d-md-block text-secondary fs-4">
+        <i class="fa-solid fa-arrow-right text-teal"></i>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-3 bg-light rounded-4 border">
+          <div class="fs-2 mb-2" style="color: var(--deep);"><i class="fa-brands fa-python"></i></div>
+          <div class="fw-bold small">FLASK SERVER</div>
+          <div class="text-muted" style="font-size: 0.72rem;">Backend Logic</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-1 d-none d-md-block text-secondary fs-4">
+        <i class="fa-solid fa-arrow-right text-teal"></i>
+      </div>
+      <div class="col-6 col-md-2 mt-md-3">
+        <div class="p-3 bg-light rounded-4 border">
+          <div class="fs-2 text-primary mb-2"><i class="fa-solid fa-database"></i></div>
+          <div class="fw-bold small">MYSQL DATABASE</div>
+          <div class="text-muted" style="font-size: 0.72rem;">Relational Storage</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-1 d-none d-md-block text-secondary fs-4 mt-md-3">
+        <i class="fa-solid fa-arrow-right text-teal"></i>
+      </div>
+      <div class="col-6 col-md-2 mt-md-3">
+        <div class="p-3 rounded-4 border" style="background: #E3F6F6; border-color: var(--bright) !important;">
+          <div class="fs-2 mb-2" style="color: var(--mid);"><i class="fa-solid fa-laptop-medical"></i></div>
+          <div class="fw-bold small text-teal">CAREPULSE WEB</div>
+          <div class="text-muted" style="font-size: 0.72rem;">Responsive UI</div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="py-5" style="background: var(--deep); color: #ffffff;">
+  <div class="container text-center">
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+      <i class="fa-solid fa-heart-pulse text-cyan fs-4" style="color: var(--sky);"></i>
+      <span class="fs-4 fw-bold">CarePulse</span>
+    </div>
+    <p class="mb-1 text-white-50">IoT-Based Healthcare Monitoring System</p>
+    <p class="badge bg-secondary mb-3">Academic Project</p>
+    <hr style="border-color: rgba(255,255,255,0.15); max-width: 600px; margin: 1.5rem auto;">
+    <p class="small text-white-50 fst-italic mb-0" style="max-width: 700px; margin: 0 auto;">
+      "CarePulse is an academic monitoring project and is not a substitute for professional medical diagnosis or treatment."
+    </p>
+  </div>
+</footer>
+
+
+
+<!-- Emergency Access Modal -->
+<div class="modal fade" id="emergencyModal" tabindex="-1" aria-labelledby="emergencyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-danger fw-bold" id="emergencyModalLabel">
+            <i class="fa-solid fa-truck-medical me-2"></i> EMERGENCY ACCESS
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-4">Select a patient below to instantly bypass authentication and access their live monitoring dashboard.</p>
+        <div class="row g-3" id="emergencyPatientList">
+            <div class="text-center"><div class="spinner-border text-danger" role="status"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function loadEmergencyPatients() {
+    fetch('/api/patients-list')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('emergencyPatientList');
+            container.innerHTML = '';
+            data.patients.forEach(p => {
+                container.innerHTML += `
+                    <div class="col-md-6">
+                        <a href="/emergency-access/${p.patient_id}" class="btn btn-outline-danger w-100 p-3 text-start d-flex align-items-center">
+                            <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                ${p.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white fw-bold">${p.name}</h5>
+                                <small class="text-secondary">${p.patient_id} &bull; ${p.gender}</small>
+                            </div>
+                        </a>
+                    </div>
+                `;
+            });
+        });
+}
+</script>
+
+{% endblock %}

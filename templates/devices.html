@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Devices — CarePulse{% endblock %}
+
+{% block header_title %}
+Device Management & IoT Integration
+{% endblock %}
+
+{% block header_subtitle %}
+Manage registered ESP32 units and review hardware ingestion API specifications.
+{% endblock %}
+
+{% block content %}
+<!-- Device Status Banner -->
+<div class="carepulse-card mb-4 p-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="vital-icon-box device" style="width: 54px; height: 54px; font-size: 1.6rem;">
+        <i class="fa-solid fa-microchip"></i>
+      </div>
+      <div>
+        <h4 class="fw-bold mb-1">CarePulse ESP32 Microcontroller</h4>
+        <div class="text-secondary small">
+          Device ID: <code class="fw-bold fs-6">ESP32-001</code> &bull; Primary Bedside Unit
+        </div>
+      </div>
+    </div>
+
+    <div>
+      {% set primary_dev = devices[0] if devices else None %}
+      {% if primary_dev and primary_dev.status == 'CONNECTED' %}
+        <span class="badge bg-success px-3 py-2 fs-6 rounded-pill">
+          <i class="fa-solid fa-circle me-1" style="font-size: 0.6rem;"></i> CONNECTED &bull; LIVE
+        </span>
+      {% else %}
+        <span class="badge bg-secondary px-3 py-2 fs-6 rounded-pill">
+          <i class="fa-solid fa-circle-xmark me-1"></i> OFFLINE / WAITING FOR HARDWARE
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <hr class="my-3">
+
+  <div class="row g-3">
+    <div class="col-sm-3">
+      <span class="small text-muted d-block">Device Status</span>
+      {% if primary_dev and primary_dev.status == 'CONNECTED' %}
+        <strong class="text-success"><i class="fa-solid fa-circle me-1"></i> CONNECTED</strong>
+      {% else %}
+        <strong class="text-secondary"><i class="fa-solid fa-circle-xmark me-1"></i> OFFLINE</strong>
+      {% endif %}
+    </div>
+    <div class="col-sm-3">
+      <span class="small text-muted d-block">Operating Mode</span>
+      <strong class="text-dark">Real Hardware Ingestion (ESP32)</strong>
+    </div>
+    <div class="col-sm-3">
+      <span class="small text-muted d-block">Assigned Patient</span>
+      <strong class="text-dark">Patient P001</strong>
+    </div>
+    <div class="col-sm-3">
+      <span class="small text-muted d-block">Last Communication</span>
+      <span class="text-muted">
+        {% if primary_dev and primary_dev.last_seen %}
+          {{ primary_dev.last_seen }}
+        {% else %}
+          Waiting for ESP32 packet
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="alert alert-info mt-4 mb-0 py-2 small d-flex align-items-center gap-2">
+    <i class="fa-solid fa-circle-info fs-5 text-teal"></i>
+    <span><strong>Hardware Integration:</strong> Data is ingested strictly from the physical ESP32 via <code>POST /api/sensor-data</code>. When the device is offline or powered down, the status accurately reflects <strong>OFFLINE</strong> without simulated fallbacks.</span>
+  </div>
+</div>
+
+<!-- Future IoT Architecture & API Documentation -->
+<div class="row g-4">
+  <!-- Architecture Visual -->
+  <div class="col-lg-6">
+    <div class="carepulse-card p-4 h-100">
+      <h5 class="fw-bold mb-3 pb-2 border-bottom"><i class="fa-solid fa-diagram-project text-teal me-2"></i>Future IoT Hardware Flow</h5>
+      <p class="text-secondary small">
+        When your physical sensors and ESP32 board arrive, wire the sensors to the ESP32 and program it to POST data to your local CarePulse server:
+      </p>
+
+      <div class="p-3 bg-light rounded-4 text-center border my-3">
+        <div class="fw-bold text-dark mb-1">HEALTH SENSORS (MAX30102, DS18B20)</div>
+        <div class="text-teal fs-4 my-1"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="fw-bold text-dark mb-1">ESP32 MICROCONTROLLER</div>
+        <div class="text-teal fs-4 my-1"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="fw-bold text-dark mb-1">Wi-Fi HTTP CLIENT</div>
+        <div class="text-teal fs-4 my-1"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="fw-bold text-teal mb-1">FLASK REST API (POST /api/sensor-data)</div>
+        <div class="text-teal fs-4 my-1"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="fw-bold text-dark mb-1">MYSQL DATABASE (carepulse)</div>
+        <div class="text-teal fs-4 my-1"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="fw-bold text-dark">CAREPULSE WEBSITE (Auto-Refreshed)</div>
+      </div>
+
+      <div class="small text-secondary">
+        <i class="fa-solid fa-check text-success me-1"></i>
+        <strong>Zero Frontend Rebuilding:</strong> The website reads directly from the database and REST endpoints. Switching from Demo Mode to real hardware requires zero changes to the web pages!
+      </div>
+    </div>
+  </div>
+
+  <!-- API Endpoint Code Example -->
+  <div class="col-lg-6">
+    <div class="carepulse-card p-4 h-100">
+      <h5 class="fw-bold mb-3 pb-2 border-bottom"><i class="fa-solid fa-code text-teal me-2"></i>ESP32 API Specification</h5>
+      <p class="text-secondary small">
+        Your ESP32 firmware should send an HTTP POST request to this endpoint every 2–5 seconds:
+      </p>
+
+      <div class="mb-2">
+        <span class="badge bg-primary me-2">POST</span>
+        <code>http://&lt;YOUR_PC_IP&gt;:5000/api/sensor-data</code>
+      </div>
+
+      <div class="p-3 bg-dark text-white rounded-3 small font-monospace mb-3 overflow-auto" style="max-height: 220px;">
+<pre class="mb-0"><code>{
+  "device_id": "ESP32-001",
+  "patient_id": "P001",
+  "heart_rate": 76.5,
+  "spo2": 98.2,
+  "temperature": 36.7,
+  "data_source": "ESP32"
+}</code></pre>
+      </div>
+
+      <h6 class="fw-bold small text-uppercase text-secondary">Backend Pipeline Executed:</h6>
+      <ol class="small text-secondary ps-3 mb-0">
+        <li>Validates JSON types and required parameters.</li>
+        <li>Updates device record status to <code>CONNECTED</code> and updates <code>last_seen</code> timestamp.</li>
+        <li>Stores reading in MySQL with <code>data_source = 'ESP32'</code>.</li>
+        <li>Checks project monitoring thresholds and automatically dispatches alerts if thresholds are breached.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+{% endblock %}

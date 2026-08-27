@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Health Analytics — CarePulse{% endblock %}
+
+{% block header_title %}
+Health Analytics & Trends
+{% endblock %}
+
+{% block header_subtitle %}
+Quantitative statistical breakdowns, circadian trends, and distribution metrics.
+{% endblock %}
+
+{% block content %}
+<!-- Filter & Range Selector Bar -->
+<div class="carepulse-card mb-4 p-3">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <label for="analyticsTimeRange" class="small fw-bold text-secondary text-nowrap">Time Interval:</label>
+        <select class="form-select form-select-sm" id="analyticsTimeRange">
+          <option value="1h">Last 1 Hour</option>
+          <option value="6h">Last 6 Hours</option>
+          <option value="24h" selected>Last 24 Hours</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <span class="badge px-3 py-2 rounded-pill" style="background: #E7F7F8; color: var(--mid); font-weight: 700;">
+        <i class="fa-solid fa-chart-pie me-1"></i> Continuous Statistical Engine
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- 5 STATISTIC SUMMARY CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-md">
+    <div class="carepulse-card p-3 text-center h-100">
+      <span class="small fw-bold text-muted text-uppercase">HR Average</span>
+      <h3 class="fw-bold text-danger my-1" id="statHrAvg">{{ stats.hr_avg }}</h3>
+      <span class="small text-muted">BPM Baseline</span>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-md">
+    <div class="carepulse-card p-3 text-center h-100">
+      <span class="small fw-bold text-muted text-uppercase">HR Range (Min/Max)</span>
+      <h3 class="fw-bold text-dark my-1">
+        <span id="statHrMin">{{ stats.hr_min }}</span> / <span id="statHrMax">{{ stats.hr_max }}</span>
+      </h3>
+      <span class="small text-muted">BPM Bounds</span>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-md">
+    <div class="carepulse-card p-3 text-center h-100">
+      <span class="small fw-bold text-muted text-uppercase">SpO₂ Mean</span>
+      <h3 class="fw-bold text-info my-1" style="color: var(--bright) !important;" id="statSpo2Avg">{{ stats.spo2_avg }}%</h3>
+      <span class="small text-muted">Oxygenation</span>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-md">
+    <div class="carepulse-card p-3 text-center h-100">
+      <span class="small fw-bold text-muted text-uppercase">Avg Temperature</span>
+      <h3 class="fw-bold text-warning my-1" style="color: #E08E24 !important;" id="statTempAvg">{{ stats.temp_avg }}°C</h3>
+      <span class="small text-muted">Normothermic</span>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-md">
+    <div class="carepulse-card p-3 text-center h-100">
+      <span class="small fw-bold text-muted text-uppercase">Current Trend</span>
+      <h3 class="fw-bold text-success my-1"><i class="fa-solid fa-arrow-trend-up"></i> Stable</h3>
+      <span class="small text-muted">Circadian Sync</span>
+    </div>
+  </div>
+</div>
+
+<!-- 3 DETAILED CHART.JS GRAPHS -->
+<div class="row g-4 mb-4">
+  
+  <!-- 1. Heart Rate Over Time -->
+  <div class="col-12">
+    <div class="carepulse-card p-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <div class="vital-icon-box hr" style="width: 36px; height: 36px; font-size: 1rem;">
+            <i class="fa-solid fa-heart-pulse"></i>
+          </div>
+          <h5 class="fw-bold mb-0">Heart Rate Over Time (BPM)</h5>
+        </div>
+        <span class="badge bg-danger-subtle text-danger">Target: 60 - 100 BPM</span>
+      </div>
+      <div style="height: 280px;">
+        <canvas id="analyticsHrChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. SpO2 Over Time -->
+  <div class="col-lg-6">
+    <div class="carepulse-card p-4 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <div class="vital-icon-box spo2" style="width: 36px; height: 36px; font-size: 1rem;">
+            <i class="fa-solid fa-droplet"></i>
+          </div>
+          <h5 class="fw-bold mb-0">Blood Oxygen Saturation (SpO₂)</h5>
+        </div>
+        <span class="badge px-3 py-1" style="background: #E3F6F6; color: var(--mid);">Target: ≥ 95%</span>
+      </div>
+      <div style="height: 250px;">
+        <canvas id="analyticsSpo2Chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Temperature Over Time -->
+  <div class="col-lg-6">
+    <div class="carepulse-card p-4 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <div class="vital-icon-box temp" style="width: 36px; height: 36px; font-size: 1rem;">
+            <i class="fa-solid fa-temperature-half"></i>
+          </div>
+          <h5 class="fw-bold mb-0">Core Body Temperature (°C)</h5>
+        </div>
+        <span class="badge px-3 py-1" style="background: #FFF2E0; color: #E08E24;">Target: 36.1 - 37.2 °C</span>
+      </div>
+      <div style="height: 250px;">
+        <canvas id="analyticsTempChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  window.initialAnalyticsData = {{ readings | tojson | safe }};
+</script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

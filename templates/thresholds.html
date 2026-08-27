@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Threshold Settings — CarePulse{% endblock %}
+
+{% block header_title %}
+Project Monitoring Thresholds
+{% endblock %}
+
+{% block header_subtitle %}
+Configure physiological threshold triggers for normal baseline, warning states, and critical alerts.
+{% endblock %}
+
+{% block content %}
+<div class="carepulse-card mb-4 p-4">
+  <div class="alert alert-info py-2 small d-flex align-items-center gap-2 mb-4">
+    <i class="fa-solid fa-circle-info fs-5"></i>
+    <span><strong>Notice:</strong> These bounds represent <em>Project Monitoring Thresholds</em> for simulated and IoT clinical telemetric demonstration. They do not constitute automated medical diagnosis or clinical protocols.</span>
+  </div>
+
+  <form id="thresholdsForm">
+    <!-- 1. HEART RATE THRESHOLDS -->
+    <div class="p-3 bg-light rounded-4 border mb-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="vital-icon-box hr" style="width: 38px; height: 38px; font-size: 1.1rem;">
+          <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+        <h5 class="fw-bold mb-0 text-dark">Heart Rate Thresholds (BPM)</h5>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-success mb-2">Normal Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min BPM</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="hr_norm_min" value="{{ thresholds['Heart Rate'].normal_min | round | int }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max BPM</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="hr_norm_max" value="{{ thresholds['Heart Rate'].normal_max | round | int }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-warning text-dark mb-2">Warning Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min BPM</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="hr_warn_min" value="{{ thresholds['Heart Rate'].warning_min | round | int }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max BPM</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="hr_warn_max" value="{{ thresholds['Heart Rate'].warning_max | round | int }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-danger mb-2">Critical Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min BPM</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="hr_crit_min" value="{{ thresholds['Heart Rate'].critical_min | round | int }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max BPM</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="hr_crit_max" value="{{ thresholds['Heart Rate'].critical_max | round | int }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. SpO2 THRESHOLDS -->
+    <div class="p-3 bg-light rounded-4 border mb-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="vital-icon-box spo2" style="width: 38px; height: 38px; font-size: 1.1rem;">
+          <i class="fa-solid fa-droplet"></i>
+        </div>
+        <h5 class="fw-bold mb-0 text-dark">Blood Oxygen Saturation (SpO₂ %)</h5>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-success mb-2">Normal Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min %</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="spo2_norm_min" value="{{ thresholds['SpO2'].normal_min | round | int }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max %</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="spo2_norm_max" value="{{ thresholds['SpO2'].normal_max | round | int }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-warning text-dark mb-2">Warning Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min %</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="spo2_warn_min" value="{{ thresholds['SpO2'].warning_min | round | int }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max %</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="spo2_warn_max" value="{{ thresholds['SpO2'].warning_max | round | int }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-danger mb-2">Critical Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min %</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="spo2_crit_min" value="{{ thresholds['SpO2'].critical_min | round | int }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max %</label>
+                <input type="number" step="1" class="form-control form-control-sm" id="spo2_crit_max" value="{{ thresholds['SpO2'].critical_max | round | int }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. TEMPERATURE THRESHOLDS -->
+    <div class="p-3 bg-light rounded-4 border mb-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="vital-icon-box temp" style="width: 38px; height: 38px; font-size: 1.1rem;">
+          <i class="fa-solid fa-temperature-half"></i>
+        </div>
+        <h5 class="fw-bold mb-0 text-dark">Body Temperature Thresholds (°C)</h5>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-success mb-2">Normal Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min °C</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="temp_norm_min" value="{{ thresholds['Temperature'].normal_min }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max °C</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="temp_norm_max" value="{{ thresholds['Temperature'].normal_max }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-warning text-dark mb-2">Warning Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min °C</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="temp_warn_min" value="{{ thresholds['Temperature'].warning_min }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max °C</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="temp_warn_max" value="{{ thresholds['Temperature'].warning_max }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="p-3 bg-white rounded-3 border">
+            <span class="badge bg-danger mb-2">Critical Range</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="small text-muted">Min °C</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="temp_crit_min" value="{{ thresholds['Temperature'].critical_min }}" required>
+              </div>
+              <div class="col-6">
+                <label class="small text-muted">Max °C</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="temp_crit_max" value="{{ thresholds['Temperature'].critical_max }}" required>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-3">
+      <button type="submit" class="btn btn-carepulse-primary px-4 py-2" id="saveThresholdsBtn">
+        <i class="fa-solid fa-floppy-disk me-1"></i> SAVE SETTINGS
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const tForm = document.getElementById('thresholdsForm');
+  if (tForm) {
+    tForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('saveThresholdsBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Saving...';
+
+      const payload = {
+        'Heart Rate': {
+          normal_min: document.getElementById('hr_norm_min').value,
+          normal_max: document.getElementById('hr_norm_max').value,
+          warning_min: document.getElementById('hr_warn_min').value,
+          warning_max: document.getElementById('hr_warn_max').value,
+          critical_min: document.getElementById('hr_crit_min').value,
+          critical_max: document.getElementById('hr_crit_max').value
+        },
+        'SpO2': {
+          normal_min: document.getElementById('spo2_norm_min').value,
+          normal_max: document.getElementById('spo2_norm_max').value,
+          warning_min: document.getElementById('spo2_warn_min').value,
+          warning_max: document.getElementById('spo2_warn_max').value,
+          critical_min: document.getElementById('spo2_crit_min').value,
+          critical_max: document.getElementById('spo2_crit_max').value
+        },
+        'Temperature': {
+          normal_min: document.getElementById('temp_norm_min').value,
+          normal_max: document.getElementById('temp_norm_max').value,
+          warning_min: document.getElementById('temp_warn_min').value,
+          warning_max: document.getElementById('temp_warn_max').value,
+          critical_min: document.getElementById('temp_crit_min').value,
+          critical_max: document.getElementById('temp_crit_max').value
+        }
+      };
+
+      try {
+        const res = await fetch('/api/thresholds?patient_id={{ selected_patient }}', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          showCarePulseToast('Settings Saved', 'Project monitoring thresholds updated in MySQL database.', 'success');
+        } else {
+          showCarePulseToast('Error', 'Failed to update thresholds.', 'danger');
+        }
+      } catch (err) {
+        showCarePulseToast('Error', 'Connection error.', 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> SAVE SETTINGS';
+      }
+    });
+  }
+</script>
+{% endblock %}

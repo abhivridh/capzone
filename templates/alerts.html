@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts & Notifications — CarePulse{% endblock %}
+
+{% block header_title %}
+Alerts & Notifications
+{% endblock %}
+
+{% block header_subtitle %}
+Automated threshold alerts, severity assessments, and clinical resolution tracking.
+{% endblock %}
+
+{% block content %}
+<div class="carepulse-card mb-4">
+  <!-- Tabs Bar -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+    <ul class="nav nav-pills gap-2" id="alertTabs">
+      <li class="nav-item">
+        <a class="nav-link {% if current_tab == 'Active' %}active{% endif %} rounded-pill fw-bold" href="{{ url_for('alerts_view', tab='Active') }}">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i> Active Alerts 
+          <span class="badge bg-danger ms-1">{{ active_count }}</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if current_tab == 'Resolved' %}active{% endif %} rounded-pill fw-bold" href="{{ url_for('alerts_view', tab='Resolved') }}">
+          <i class="fa-solid fa-circle-check me-1"></i> Resolved
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if current_tab == 'All' %}active{% endif %} rounded-pill fw-bold" href="{{ url_for('alerts_view', tab='All') }}">
+          All Notifications
+        </a>
+      </li>
+    </ul>
+
+    <div>
+      <span class="badge bg-light text-secondary border px-3 py-2">
+        <i class="fa-solid fa-satellite-dish text-success me-1"></i> Real Hardware Ingestion
+      </span>
+    </div>
+  </div>
+
+  <!-- Alerts List -->
+  <div class="alerts-container">
+    {% if alerts %}
+      {% for a in alerts %}
+        <div class="alert-card-item {{ a.severity.lower() }} {% if a.status == 'Resolved' %}resolved{% endif %}" id="alertCard_{{ a.id }}">
+          
+          <div class="alert-item-icon {{ a.severity.lower() }}">
+            {% if a.status == 'Resolved' %}
+              <i class="fa-solid fa-check"></i>
+            {% elif a.severity == 'Critical' %}
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            {% else %}
+              <i class="fa-solid fa-circle-exclamation"></i>
+            {% endif %}
+          </div>
+
+          <div class="flex-grow-1">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+              <div>
+                <span class="badge {% if a.severity=='Critical' %}bg-danger{% elif a.severity=='Warning' %}bg-warning text-dark{% else %}bg-secondary{% endif %} me-2">
+                  {{ a.severity.upper() }} ALERT
+                </span>
+                <span class="fw-bold text-dark fs-6">{{ a.sensor_type }}</span>
+                <span class="text-muted ms-2">(Current: <strong>{{ a.value }}</strong> | Threshold: {{ a.threshold }})</span>
+              </div>
+              <div>
+                <span class="badge {% if a.status=='Active' %}bg-danger{% else %}bg-success{% endif %} alert-status-badge">
+                  {{ a.status }}
+                </span>
+              </div>
+            </div>
+
+            <p class="text-secondary mb-2 mt-1 small">
+              {{ a.message }}
+            </p>
+
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top">
+              <div class="small text-muted">
+                <i class="fa-regular fa-clock me-1"></i> Triggered: <strong>{{ a.created_at }}</strong>
+                {% if a.resolved_at %}
+                  &bull; <i class="fa-solid fa-check text-success me-1"></i> Resolved: <strong>{{ a.resolved_at }}</strong>
+                {% endif %}
+                &bull; Patient: <span class="badge bg-light text-dark border">{{ a.patient_id }}</span>
+                &bull; Device: <code>{{ a.device_id }}</code>
+              </div>
+
+              <div class="d-flex align-items-center gap-2">
+                {% if a.status == 'Active' %}
+                  <button class="btn btn-sm btn-outline-success rounded-pill btn-resolve-alert" data-alert-id="{{ a.id }}">
+                    <i class="fa-solid fa-check me-1"></i> RESOLVE
+                  </button>
+                {% else %}
+                  <span class="text-success small fw-bold"><i class="fa-solid fa-check me-1"></i> Resolved</span>
+                {% endif %}
+                <button class="btn btn-sm btn-light border rounded-pill" onclick="alert('Alert #{{ a.id }}\nSensor: {{ a.sensor_type }}\nObserved Value: {{ a.value }}\nMonitoring Message: {{ a.message }}\nTimestamp: {{ a.created_at }}')">
+                  VIEW DETAILS
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fa-solid fa-shield-heart fs-1 text-teal mb-3" style="color: var(--bright);"></i>
+        <h5 class="fw-bold text-dark">No {{ current_tab }} Alerts</h5>
+        <p class="mb-3">There are currently no {{ current_tab.lower() }} monitoring alerts logged in the system.</p>
+        <button class="btn btn-outline-danger btn-sm rounded-pill" onclick="document.getElementById('btnSimulateAlert').click()">
+          <i class="fa-solid fa-bolt me-1"></i> Click Here to Simulate an Alert
+        </button>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Medical Project Notice -->
+  <div class="mt-4 p-3 bg-light rounded-3 small text-muted text-center border">
+    <i class="fa-solid fa-circle-info text-teal me-1"></i>
+    <strong>Project Notice:</strong> Alert classifications (Normal, Warning, Critical) are generated based on project monitoring thresholds and are intended for technical academic demonstration, not autonomous medical diagnosis.
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/alerts.js') }}"></script>
+{% endblock %}

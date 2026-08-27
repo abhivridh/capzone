@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Health History — CarePulse{% endblock %}
+
+{% block header_title %}
+Health History Log
+{% endblock %}
+
+{% block header_subtitle %}
+Auditable database logs for physiological readings across monitored timeframes.
+{% endblock %}
+
+{% block content %}
+<div class="carepulse-card mb-4">
+  <!-- Filter Controls -->
+  <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="small fw-bold text-secondary me-2">Time Range:</span>
+      <a href="{{ url_for('history_view', filter='1h', patient_id=selected_patient) }}" 
+         class="btn btn-sm {% if current_filter == '1h' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">Last 1 Hour</a>
+      <a href="{{ url_for('history_view', filter='6h', patient_id=selected_patient) }}" 
+         class="btn btn-sm {% if current_filter == '6h' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">Last 6 Hours</a>
+      <a href="{{ url_for('history_view', filter='24h', patient_id=selected_patient) }}" 
+         class="btn btn-sm {% if current_filter == '24h' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">Last 24 Hours</a>
+      <a href="{{ url_for('history_view', filter='7d', patient_id=selected_patient) }}" 
+         class="btn btn-sm {% if current_filter == '7d' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">Last 7 Days</a>
+      <a href="{{ url_for('history_view', filter='30d', patient_id=selected_patient) }}" 
+         class="btn btn-sm {% if current_filter == '30d' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">Last 30 Days</a>
+    </div>
+
+    <!-- Patient Selector & Export Button -->
+    <div class="d-flex align-items-center gap-2">
+      <select class="form-select form-select-sm" id="patientFilterSelect" onchange="window.location.href='{{ url_for('history_view') }}?filter={{ current_filter }}&patient_id=' + this.value">
+        {% for p in patients %}
+          <option value="{{ p.patient_id }}" {% if p.patient_id == selected_patient %}selected{% endif %}>
+            {{ p.name }} ({{ p.patient_id }})
+          </option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm btn-outline-teal text-nowrap" style="color: var(--mid); border-color: var(--mid);" onclick="exportTableToCSV('carepulse_history.csv')">
+        <i class="fa-solid fa-file-arrow-down me-1"></i> Export CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- History Table -->
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="historyTable">
+      <thead class="table-light">
+        <tr>
+          <th>Recorded Time</th>
+          <th>Heart Rate</th>
+          <th>Oxygen (SpO₂)</th>
+          <th>Body Temperature</th>
+          <th>Evaluated Status</th>
+          <th>Data Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if readings %}
+          {% for r in readings %}
+            <tr>
+              <td>
+                <i class="fa-regular fa-clock text-muted me-1"></i>
+                <span class="fw-semibold">{{ r.timestamp }}</span>
+              </td>
+              <td>
+                <span class="fw-bold {% if r.heart_rate > 110 or r.heart_rate < 50 %}text-danger{% else %}text-dark{% endif %}">
+                  {{ r.heart_rate | round(1) }}
+                </span>
+                <small class="text-muted">BPM</small>
+              </td>
+              <td>
+                <span class="fw-bold {% if r.spo2 < 94 %}text-danger{% else %}text-dark{% endif %}">
+                  {{ r.spo2 | round(1) }}
+                </span>
+                <small class="text-muted">%</small>
+              </td>
+              <td>
+                <span class="fw-bold {% if r.temperature > 37.8 %}text-danger{% else %}text-dark{% endif %}">
+                  {{ r.temperature | round(1) }}
+                </span>
+                <small class="text-muted">°C</small>
+              </td>
+              <td>
+                {% if r.heart_rate > 115 or r.spo2 < 92 or r.temperature > 38.0 %}
+                  <span class="badge bg-danger">Critical</span>
+                {% elif r.heart_rate > 100 or r.spo2 < 95 or r.temperature > 37.3 %}
+                  <span class="badge bg-warning text-dark">Warning</span>
+                {% else %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Normal</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {% if r.data_source == 'ESP32' %}bg-primary{% else %}bg-light text-muted border{% endif %}">
+                  {{ r.data_source }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="fa-solid fa-inbox fs-2 mb-2"></i>
+              <p class="mb-0">No readings logged for this timeframe. </p>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function exportTableToCSV(filename) {
+    const rows = Array.from(document.querySelectorAll('#historyTable tr'));
+    const csv = rows.map(row => {
+      const cols = Array.from(row.querySelectorAll('th, td'));
+      return cols.map(c => `"${c.innerText.replace(/"/g, '""').trim()}"`).join(',');
+    }).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+</script>
+{% endblock %}
