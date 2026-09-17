@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - CarePulse{% endblock %}
+{% block header_title %}Administrator Dashboard{% endblock %}
+{% block header_subtitle %}System-wide overview of users, patients, and hardware status.{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="alert('Open Add Patient Modal (Under Construction)')">
+            <i class="fa-solid fa-user-plus me-1"></i> Add Patient
+        </button>
+        <button class="btn btn-teal text-white fw-bold px-4 shadow-sm" style="background-color: var(--teal); border: none;" onclick="alert('Open Add Caregiver Modal (Under Construction)')">
+            <i class="fa-solid fa-user-shield me-1"></i> Add Caregiver
+        </button>
+        <button class="btn btn-info text-white fw-bold px-4 shadow-sm" style="background-color: #17a2b8; border: none;" onclick="alert('Open Add Doctor Modal (Under Construction)')">
+            <i class="fa-solid fa-user-doctor me-1"></i> Add Doctor
+        </button>
+    </div>
+</div>
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="carepulse-card p-4 text-center border-top border-4 border-primary h-100">
+            <h5 class="text-secondary fw-bold mb-3"><i class="fa-solid fa-users me-2"></i>Total Users</h5>
+            <div class="display-4 fw-bold text-dark">{{ users|length }}</div>
+            <div class="mt-3">
+                <a href="{{ url_for('admin_bp.manage_users') }}" class="btn btn-sm btn-outline-primary">Manage Users</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="carepulse-card p-4 text-center border-top border-4 border-success h-100">
+            <h5 class="text-secondary fw-bold mb-3"><i class="fa-solid fa-hospital-user me-2"></i>Patients</h5>
+            <div class="display-4 fw-bold text-dark">{{ patients|length }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="carepulse-card p-4 text-center border-top border-4 border-info h-100">
+            <h5 class="text-secondary fw-bold mb-3"><i class="fa-solid fa-microchip me-2"></i>IoT Devices</h5>
+            <div class="display-4 fw-bold text-dark">{{ devices|length }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="carepulse-card p-4 text-center border-top border-4 border-danger h-100">
+            <h5 class="text-secondary fw-bold mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>Active Alerts</h5>
+            <div class="display-4 fw-bold text-dark">{{ alerts|length }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="carepulse-card p-4">
+            <h5 class="fw-bold mb-4"><i class="fa-solid fa-video text-primary me-2"></i>Patient Camera & Privacy Management</h5>
+            <p class="text-secondary small mb-4">Critically ill patients cannot manage their own camera access. As an administrator, you must verify the assigned doctor and authorize camera monitoring below.</p>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Patient ID</th>
+                            <th>Gender</th>
+                            <th>Camera Access (Admin Override)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in patients %}
+                        <tr>
+                            <td class="fw-bold">{{ p.name }}</td>
+                            <td class="text-secondary">{{ p.patient_id }}</td>
+                            <td>{{ p.gender }}</td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input admin-cam-switch" type="checkbox" role="switch" data-pid="{{ p.patient_id }}" {% if p.camera_enabled %}checked{% endif %}>
+                                    <label class="form-check-label small {% if p.camera_enabled %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                        {% if p.camera_enabled %}GRANTED{% else %}REVOKED{% endif %}
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const switches = document.querySelectorAll('.admin-cam-switch');
+    switches.forEach(sw => {
+        sw.addEventListener('change', function() {
+            const pid = this.getAttribute('data-pid');
+            const isChecked = this.checked;
+            const label = this.nextElementSibling;
+            
+            if(isChecked) {
+                label.innerText = "GRANTED";
+                label.className = "form-check-label small text-success fw-bold";
+            } else {
+                label.innerText = "REVOKED";
+                label.className = "form-check-label small text-danger fw-bold";
+            }
+            
+            fetch("{{ url_for('admin_bp.admin_toggle_camera') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({patient_id: pid, enabled: isChecked})
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

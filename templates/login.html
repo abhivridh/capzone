@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — CarePulse
+<script>
+function togglePasswordVisibility_loginPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+{% endblock %}
+
+{% block public_content %}
+<div class="auth-page-container">
+  <div class="auth-card">
+    
+    <div class="auth-brand">
+      <div class="brand-badge">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <div>
+        <h3 class="fw-bold mb-0">CarePulse</h3>
+        <span class="small text-muted">IoT Healthcare System</span>
+      </div>
+    </div>
+
+    <h4 class="fw-bold mb-1">Welcome back</h4>
+    <p class="text-secondary small mb-4">Sign in to continue monitoring health.</p>
+
+    <!-- Flash messages inside card -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login_view', next=request.args.get('next')) }}" id="loginForm">
+      <!-- Email Field -->
+      <div class="mb-3">
+        <label for="loginEmail" class="form-label small fw-bold text-secondary">Email Address</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-regular fa-envelope text-muted"></i></span>
+          <input type="email" class="form-control" id="loginEmail" name="email" placeholder="patient@example.com" required>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <label for="loginPassword" class="form-label small fw-bold text-secondary">Password</label>
+          <a href="#" class="small text-muted" onclick="alert('Please contact your clinic administrator to reset your password.'); return false;">Forgot Password?</a>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+          <input type="password" class="form-control" id="loginPassword" name="password" placeholder="••••••••" required>
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility_loginPassword('loginPassword', 'eye_loginPassword')">
+              <i class="fa-regular fa-eye" id="eye_loginPassword"></i>
+            </button>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-white shadow-sm mb-3" style="background: var(--deep); border: none; border-radius: var(--radius-sm);">
+        SIGN IN
+      </button>
+    </form>
+
+    <div class="text-center mt-4 pt-3 border-top">
+      <span class="text-secondary small">Don't have an account?</span>
+      <a href="{{ url_for('register_view') }}" class="small fw-bold text-teal ms-1">Create Account</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePasswordVisibility_loginPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Caregivers & Emergency Contacts — CarePulse{% endblock %}
+
+{% block header_title %}
+Caregiver Alert Network
+{% endblock %}
+
+{% block header_subtitle %}
+Manage family contacts, emergency relatives, and automated alert dispatch routing.
+{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  
+  <!-- Left Header Column: Patient Selection & Alert Routing Mode -->
+  <div class="col-lg-8">
+    <div class="carepulse-card p-4 h-100 shadow-sm border-teal">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-3 border-bottom">
+        <div>
+          <span class="badge bg-light text-teal border border-teal fw-bold mb-2">
+            <i class="fa-solid fa-hospital-user me-1"></i> Patient: {{ patient.name if patient else 'Demo Patient' }} ({{ selected_patient }})
+          </span>
+          <h4 class="fw-bold mb-1"><i class="fa-solid fa-people-roof text-teal me-2"></i>Emergency Alert Dispatch Routing</h4>
+          <p class="text-muted small mb-0">Select how emergency notifications are distributed when abnormal or critical vitals occur.</p>
+        </div>
+
+        {% if patients and patients|length > 1 %}
+        <div>
+          <label class="form-label small fw-bold text-secondary mb-1">Switch Monitored Patient:</label>
+          <select class="form-select form-select-sm" onchange="window.location.href='{{ url_for('caregivers_view') }}?patient_id=' + this.value">
+            {% for p in patients %}
+              <option value="{{ p.patient_id }}" {% if p.patient_id == selected_patient %}selected{% endif %}>
+                {{ p.name }} ({{ p.patient_id }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Alert Dispatch Policy Selector -->
+      <div class="row g-3 align-items-center">
+        <div class="col-md-6">
+          <div class="form-check p-3 border rounded-3 h-100 {% if alert_mode == 'PRIMARY' %}border-primary bg-primary-subtle{% endif %}">
+            <input class="form-check-input" type="radio" name="alertRoutingPolicy" id="policyPrimary" value="PRIMARY" {% if alert_mode == 'PRIMARY' %}checked{% endif %} onchange="updateAlertPolicy('PRIMARY')">
+            <label class="form-check-label fw-bold d-block" for="policyPrimary">
+              <i class="fa-solid fa-star text-warning me-1"></i> Primary Caregiver Only
+            </label>
+            <span class="text-muted small">
+              Sends urgent notifications exclusively to the designated primary relative (prevents multiple family alerts).
+            </span>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check p-3 border rounded-3 h-100 {% if alert_mode == 'ALL' %}border-danger bg-danger-subtle{% endif %}">
+            <input class="form-check-input" type="radio" name="alertRoutingPolicy" id="policyAll" value="ALL" {% if alert_mode == 'ALL' %}checked{% endif %} onchange="updateAlertPolicy('ALL')">
+            <label class="form-check-label fw-bold d-block" for="policyAll">
+              <i class="fa-solid fa-bullhorn text-danger me-1"></i> All Registered Caregivers
+            </label>
+            <span class="text-muted small">
+              Broadcasts simultaneous notifications to all active relatives (Daughter, Son, Husband, etc.).
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right Column: Quick Status & Add Button -->
+  <div class="col-lg-4">
+    <div class="carepulse-card p-4 h-100 d-flex flex-column justify-content-between shadow-sm">
+      <div>
+        <h5 class="fw-bold mb-2"><i class="fa-solid fa-shield-heart text-danger me-2"></i>Caregiver Safety Net</h5>
+        <p class="text-muted small mb-3">
+          When sensors detect critical heart rate, severe hypoxia, or fever/hypothermia, emails are dispatched directly to the caregiver's mobile device with the patient's exact condition.
+        </p>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-success-subtle text-success p-2 rounded-circle"><i class="fa-solid fa-check"></i></span>
+          <span class="small fw-semibold">Anti-Spam 5-min debouncing active</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="badge bg-info-subtle text-info p-2 rounded-circle"><i class="fa-solid fa-mobile-screen"></i></span>
+          <span class="small fw-semibold">Mobile-responsive email templates</span>
+        </div>
+      </div>
+
+      <div>
+        <button class="btn btn-carepulse-primary w-100 py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#addCaregiverModal">
+          <i class="fa-solid fa-user-plus me-1"></i> Add Emergency Caregiver
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Caregiver List Section -->
+<div class="carepulse-card p-4 shadow-sm mb-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-3 border-bottom gap-2">
+    <div>
+      <h5 class="fw-bold mb-0">Registered Emergency Caregivers ({{ caregivers|length }})</h5>
+      <span class="text-muted small">Family members and authorized contacts authorized to receive medical alerts.</span>
+    </div>
+  </div>
+
+  {% if caregivers %}
+  <div class="row g-3" id="caregiverGrid">
+    {% for cg in caregivers %}
+    <div class="col-md-6 col-xl-4" id="cgCard-{{ cg.id }}">
+      <div class="border rounded-3 p-3 h-100 position-relative {% if cg.is_primary %}border-primary shadow-sm bg-white{% else %}bg-light border-light-subtle{% endif %}">
+        
+        <!-- Top Status Row -->
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          {% set rel = cg.relationship %}
+          {% if rel == 'Daughter' %}
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="fa-solid fa-person-dress me-1"></i> Daughter</span>
+          {% elif rel == 'Son' %}
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="fa-solid fa-person me-1"></i> Son</span>
+          {% elif rel == 'Husband' or rel == 'Wife' %}
+            <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1" style="background:#f3e8ff; color:#7e22ce;"><i class="fa-solid fa-heart me-1"></i> {{ rel }}</span>
+          {% elif rel == 'Parent' %}
+            <span class="badge bg-teal-subtle text-teal border border-teal-subtle px-2 py-1"><i class="fa-solid fa-hands-holding-child me-1"></i> Parent</span>
+          {% else %}
+            <span class="badge bg-secondary-subtle text-secondary px-2 py-1"><i class="fa-solid fa-user-shield me-1"></i> {{ rel }}</span>
+          {% endif %}
+
+          {% if cg.is_primary %}
+            <span class="badge bg-warning text-dark fw-bold"><i class="fa-solid fa-star me-1"></i> Primary Contact</span>
+          {% else %}
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" onclick="setPrimaryCaregiver({{ cg.id }})">
+              Make Primary
+            </button>
+          {% endif %}
+        </div>
+
+        <!-- Caregiver Info -->
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="user-avatar" style="width: 44px; height: 44px; font-size: 1rem; background: {% if cg.is_primary %}linear-gradient(135deg, #063A52, #17B6C4){% else %}#94a3b8{% endif %};">
+            {{ cg.name[:2].upper() }}
+          </div>
+          <div class="overflow-hidden">
+            <h6 class="fw-bold mb-0 text-truncate">{{ cg.name }}</h6>
+            <div class="small text-muted text-truncate"><i class="fa-solid fa-envelope me-1 text-teal"></i>{{ cg.email }}</div>
+            {% if cg.phone %}
+              <div class="small text-muted"><i class="fa-solid fa-phone me-1 text-secondary"></i>{{ cg.phone }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Alert Notification Status -->
+        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+          <div class="small">
+            {% if cg.receive_alerts %}
+              <span class="text-success fw-bold"><i class="fa-solid fa-bell me-1"></i>Alerts Enabled</span>
+            {% else %}
+              <span class="text-muted"><i class="fa-solid fa-bell-slash me-1"></i>Alerts Muted</span>
+            {% endif %}
+          </div>
+          
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-light border py-1 px-2" title="Edit Caregiver" 
+                    onclick="openEditModal({{ cg.id }}, '{{ cg.name|escape }}', '{{ cg.relationship|escape }}', '{{ cg.email|escape }}', '{{ cg.phone|escape }}', {{ 'true' if cg.is_primary else 'false' }}, {{ 'true' if cg.receive_alerts else 'false' }})">
+              <i class="fa-solid fa-pen-to-square text-secondary"></i>
+            </button>
+            <button class="btn btn-sm btn-light border py-1 px-2" title="Delete Caregiver" onclick="deleteCaregiver({{ cg.id }}, '{{ cg.name|escape }}')">
+              <i class="fa-solid fa-trash-can text-danger"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <div class="mb-3 text-muted" style="font-size: 3rem;"><i class="fa-solid fa-user-group"></i></div>
+    <h5 class="fw-bold text-dark">No Caregivers Registered Yet</h5>
+    <p class="text-muted small mb-3">Add family members so CarePulse can dispatch emergency email alerts if health vitals cross critical thresholds.</p>
+    <button class="btn btn-carepulse-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCaregiverModal">
+      <i class="fa-solid fa-plus me-1"></i> Add First Caregiver
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: ADD CAREGIVER -->
+<!-- ========================================== -->
+<div class="modal fade" id="addCaregiverModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-teal text-white">
+        <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Add Emergency Caregiver</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="addCaregiverForm" onsubmit="event.preventDefault(); submitAddCaregiver();">
+        <div class="modal-body p-4">
+          <input type="hidden" id="addPatientId" value="{{ selected_patient }}">
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Caregiver Full Name *</label>
+            <input type="text" class="form-control" id="addName" placeholder="e.g. Sarah Mitchell" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Relationship to Patient *</label>
+            <select class="form-select" id="addRelationship" required>
+              <option value="Daughter">Daughter</option>
+              <option value="Son">Son</option>
+              <option value="Husband">Husband</option>
+              <option value="Wife">Wife</option>
+              <option value="Parent">Parent</option>
+              <option value="Other" selected>Other Caregiver</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Caregiver Email Address *</label>
+            <input type="email" class="form-control" id="addEmail" placeholder="caregiver@gmail.com" required>
+            <div class="form-text small">Urgent alert notifications are sent to this address.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Phone Number (Optional)</label>
+            <input type="tel" class="form-control" id="addPhone" placeholder="+1 555-0199">
+          </div>
+
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="addIsPrimary" checked>
+            <label class="form-check-label fw-semibold" for="addIsPrimary">Set as Primary Emergency Contact</label>
+          </div>
+
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="addReceiveAlerts" checked>
+            <label class="form-check-label fw-semibold" for="addReceiveAlerts">Receive Real-Time Health Alerts</label>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-carepulse-primary" id="btnAddSubmit">Save Caregiver</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: EDIT CAREGIVER -->
+<!-- ========================================== -->
+<div class="modal fade" id="editCaregiverModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Caregiver Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editCaregiverForm" onsubmit="event.preventDefault(); submitEditCaregiver();">
+        <div class="modal-body p-4">
+          <input type="hidden" id="editCgId">
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Caregiver Full Name *</label>
+            <input type="text" class="form-control" id="editName" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Relationship to Patient *</label>
+            <select class="form-select" id="editRelationship" required>
+              <option value="Daughter">Daughter</option>
+              <option value="Son">Son</option>
+              <option value="Husband">Husband</option>
+              <option value="Wife">Wife</option>
+              <option value="Parent">Parent</option>
+              <option value="Other">Other Caregiver</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Caregiver Email Address *</label>
+            <input type="email" class="form-control" id="editEmail" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Phone Number</label>
+            <input type="tel" class="form-control" id="editPhone">
+          </div>
+
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="editIsPrimary">
+            <label class="form-check-label fw-semibold" for="editIsPrimary">Set as Primary Emergency Contact</label>
+          </div>
+
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="editReceiveAlerts">
+            <label class="form-check-label fw-semibold" for="editReceiveAlerts">Receive Real-Time Health Alerts</label>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnEditSubmit">Update Caregiver</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+async function updateAlertPolicy(mode) {
+  try {
+    const res = await fetch('/api/caregivers/alert-mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patient_id: '{{ selected_patient }}',
+        mode: mode
+      })
+    });
+    const data = await res.json();
+    if (typeof showCarePulseToast === 'function') {
+      showCarePulseToast('Alert Routing', data.message, data.success ? 'success' : 'danger');
+    }
+  } catch (err) {
+    alert('Failed to update alert routing: ' + err);
+  }
+}
+
+async function setPrimaryCaregiver(cgId) {
+  try {
+    const res = await fetch(`/api/caregivers/${cgId}/primary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patient_id: '{{ selected_patient }}' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.reload();
+    }
+  } catch (err) {
+    alert('Failed to set primary: ' + err);
+  }
+}
+
+async function deleteCaregiver(cgId, name) {
+  if (!confirm(`Are you sure you want to remove caregiver "${name}"? They will no longer receive emergency alerts.`)) {
+    return;
+  }
+  try {
+    const res = await fetch(`/api/caregivers/${cgId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      window.location.reload();
+    }
+  } catch (err) {
+    alert('Failed to delete: ' + err);
+  }
+}
+
+function openEditModal(id, name, rel, email, phone, isPrimary, receiveAlerts) {
+  document.getElementById('editCgId').value = id;
+  document.getElementById('editName').value = name;
+  document.getElementById('editRelationship').value = rel;
+  document.getElementById('editEmail').value = email;
+  document.getElementById('editPhone').value = phone || '';
+  document.getElementById('editIsPrimary').checked = isPrimary;
+  document.getElementById('editReceiveAlerts').checked = receiveAlerts;
+  
+  const modal = new bootstrap.Modal(document.getElementById('editCaregiverModal'));
+  modal.show();
+}
+
+async function submitAddCaregiver() {
+  const payload = {
+    patient_id: document.getElementById('addPatientId').value,
+    name: document.getElementById('addName').value.trim(),
+    relationship: document.getElementById('addRelationship').value,
+    email: document.getElementById('addEmail').value.trim(),
+    phone: document.getElementById('addPhone').value.trim(),
+    is_primary: document.getElementById('addIsPrimary').checked,
+    receive_alerts: document.getElementById('addReceiveAlerts').checked
+  };
+
+  const btn = document.getElementById('btnAddSubmit');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/caregivers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to add caregiver.');
+    }
+  } catch (err) {
+    alert('Error adding caregiver: ' + err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function submitEditCaregiver() {
+  const cgId = document.getElementById('editCgId').value;
+  const payload = {
+    name: document.getElementById('editName').value.trim(),
+    relationship: document.getElementById('editRelationship').value,
+    email: document.getElementById('editEmail').value.trim(),
+    phone: document.getElementById('editPhone').value.trim(),
+    is_primary: document.getElementById('editIsPrimary').checked,
+    receive_alerts: document.getElementById('editReceiveAlerts').checked
+  };
+
+  const btn = document.getElementById('btnEditSubmit');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/caregivers/${cgId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to update caregiver.');
+    }
+  } catch (err) {
+    alert('Error updating caregiver: ' + err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}

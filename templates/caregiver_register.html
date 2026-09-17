@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Caregiver Registration — CarePulse
+<script>
+function togglePasswordVisibility_cgConfirmPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+
+<script>
+function togglePasswordVisibility_cgPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+{% endblock %}
+
+{% block public_content %}
+<div class="auth-page-container py-4">
+  <div class="auth-card" style="max-width: 600px;">
+    
+    <div class="auth-brand">
+      <div class="brand-badge" style="background: linear-gradient(135deg, var(--teal), var(--deep));">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <div>
+        <h3 class="fw-bold mb-0">CarePulse</h3>
+        <span class="small text-muted">Authorized Caregiver Portal</span>
+      </div>
+    </div>
+
+    <h4 class="fw-bold mb-1">Caregiver Registration</h4>
+    <p class="text-secondary small mb-3">Register as an authorized caregiver and link your account to your patient.</p>
+
+    <!-- Flash messages inside card -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div id="caregiverValidationAlert" class="alert alert-danger small py-2 d-none" role="alert"></div>
+
+    <form method="POST" action="{{ url_for('caregiver_register_view') }}" id="caregiverRegisterForm" onsubmit="return validateCaregiverForm(event)">
+      
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="cgFullName" class="form-label small fw-bold text-secondary">Caregiver Full Name *</label>
+          <input type="text" class="form-control" id="cgFullName" name="full_name" placeholder="Athira Doe" required minlength="3">
+        </div>
+        <div class="col-md-6">
+          <label for="cgEmail" class="form-label small fw-bold text-secondary">Email Address *</label>
+          <input type="email" class="form-control" id="cgEmail" name="email" placeholder="caregiver@example.com" required>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="cgPhone" class="form-label small fw-bold text-secondary">Phone Number (10 digits) *</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light small">+91</span>
+            <input type="tel" class="form-control" id="cgPhone" name="phone" placeholder="9876543210" required maxlength="10">
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label for="cgRel" class="form-label small fw-bold text-secondary">Relationship with Patient *</label>
+          <select class="form-select" id="cgRel" name="relationship" required>
+            <option value="Daughter">Daughter</option>
+            <option value="Son">Son</option>
+            <option value="Husband">Husband</option>
+            <option value="Wife">Wife</option>
+            <option value="Father">Father</option>
+            <option value="Mother">Mother</option>
+            <option value="Brother">Brother</option>
+            <option value="Sister">Sister</option>
+            <option value="Other Caregiver">Other Caregiver</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Patient Linking -->
+      <div class="mb-3 p-3 bg-light rounded border">
+        <label for="patientIdentifier" class="form-label small fw-bold text-dark">
+          <i class="fa-solid fa-link text-teal me-1"></i> Patient ID or Patient Registered Email *
+        </label>
+        <input type="text" class="form-control" id="patientIdentifier" name="patient_identifier" placeholder="e.g. P001 or patient@example.com" required>
+        <span class="text-muted" style="font-size: 0.72rem;">Enter the Patient ID (e.g. P001) or the email address of the patient you are caring for.</span>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label for="cgPassword" class="form-label small fw-bold text-secondary">Password (Min 8 chars) *</label>
+          <input type="password" class="form-control" id="cgPassword" name="password" placeholder="••••••••" required minlength="8">
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility_cgPassword('cgPassword', 'eye_cgPassword')">
+              <i class="fa-regular fa-eye" id="eye_cgPassword"></i>
+            </button>
+        </div>
+        <div class="col-md-6">
+          <label for="cgConfirmPassword" class="form-label small fw-bold text-secondary">Confirm Password *</label>
+          <input type="password" class="form-control" id="cgConfirmPassword" name="confirm_password" placeholder="••••••••" required minlength="8">
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility_cgConfirmPassword('cgConfirmPassword', 'eye_cgConfirmPassword')">
+              <i class="fa-regular fa-eye" id="eye_cgConfirmPassword"></i>
+            </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-white shadow-sm mb-3" style="background: var(--teal); border: none; border-radius: var(--radius-sm);">
+        <i class="fa-solid fa-user-shield me-1"></i> REGISTER AS CAREGIVER
+      </button>
+
+    </form>
+
+    <div class="text-center mt-3 pt-3 border-top">
+      <span class="text-secondary small">Already registered as a caregiver?</span>
+      <a href="{{ url_for('caregiver_login_view') }}" class="small fw-bold text-teal ms-1">Caregiver Sign In</a>
+      <span class="mx-2 text-muted">&bull;</span>
+      <a href="{{ url_for('patient_register_view') }}" class="small fw-bold text-secondary">Patient Registration</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function validateCaregiverForm(e) {
+  const alertBox = document.getElementById('caregiverValidationAlert');
+  alertBox.classList.add('d-none');
+  alertBox.innerText = '';
+
+  const fullName = document.getElementById('cgFullName').value.trim();
+  const email = document.getElementById('cgEmail').value.trim();
+  const phone = document.getElementById('cgPhone').value.trim();
+  const patientId = document.getElementById('patientIdentifier').value.trim();
+  const pwd = document.getElementById('cgPassword').value;
+  const cpwd = document.getElementById('cgConfirmPassword').value;
+
+  if (fullName.length < 3) {
+    showError("Please enter your full name (minimum 3 characters).");
+    e.preventDefault();
+    return false;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showError("Please enter a valid email address.");
+    e.preventDefault();
+    return false;
+  }
+
+  const phoneRegex = /^[6-9]\d{9}$/;
+  if (!phoneRegex.test(phone)) {
+    showError("Please enter a valid 10-digit Indian mobile number.");
+    e.preventDefault();
+    return false;
+  }
+
+  if (!patientId) {
+    showError("Please specify the Patient ID or patient email you are assigned to.");
+    e.preventDefault();
+    return false;
+  }
+
+  if (pwd.length < 8) {
+    showError("Password must be at least 8 characters long.");
+    e.preventDefault();
+    return false;
+  }
+  if (pwd !== cpwd) {
+    showError("Passwords do not match.");
+    e.preventDefault();
+    return false;
+  }
+
+  return true;
+
+  function showError(msg) {
+    alertBox.innerText = msg;
+    alertBox.classList.remove('d-none');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+</script>
+
+<script>
+function togglePasswordVisibility_cgConfirmPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+
+<script>
+function togglePasswordVisibility_cgPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+{% endblock %}

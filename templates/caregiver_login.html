@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Caregiver Sign In - CarePulse{% endblock %}
+
+{% block public_content %}
+<div class="auth-page-container">
+  <div class="auth-card" style="max-width: 700px;">
+    
+    <div class="auth-brand">
+      <div class="brand-badge" style="background: linear-gradient(135deg, var(--mid), var(--deep));">
+        <i class="fa-solid fa-user-shield text-white"></i>
+      </div>
+      <div>
+        <h3 class="fw-bold mb-0">CarePulse</h3>
+        <span class="small text-muted">Authorized Caregiver Portal</span>
+      </div>
+    </div>
+
+    <h4 class="fw-bold mb-1">Caregiver Directory</h4>
+    <p class="text-secondary small mb-4">Select your Caregiver profile to bypass authentication and monitor your assigned patient.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if caregivers %}
+      <div class="mb-4">
+        <div class="row g-2">
+          {% for cg in caregivers %}
+            <div class="col-md-4 col-sm-6">
+                <form method="POST" action="{{ url_for('caregiver_login_view') }}">
+                    <input type="hidden" name="email" value="{{ cg.email }}">
+                    <input type="hidden" name="password" value="password">
+                    <button type="submit" class="btn btn-outline-primary w-100 p-2 text-start d-flex align-items-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2 flex-shrink-0" style="width: 35px; height: 35px; font-size: 0.9rem;">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div class="text-truncate">
+                            <div class="mb-0 fw-bold small text-truncate" title="{{ cg.full_name }}">{{ cg.full_name }}</div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div class="alert alert-info small">No caregivers registered yet.</div>
+    {% endif %}
+
+    <div class="text-center mt-3 pt-3 border-top">
+      <a href="{{ url_for('home_view') }}" class="small fw-bold text-secondary"><i class="fa-solid fa-arrow-left me-1"></i>Back to Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

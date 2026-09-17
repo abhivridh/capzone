@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — CarePulse{% endblock %}
+
+{% block header_title %}
+System & Account Settings
+{% endblock %}
+
+{% block header_subtitle %}
+Manage application preferences, account security, and IoT simulation configuration.
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  
+  <!-- Left Column: User Account Settings -->
+  <div class="col-lg-12">
+    <div class="carepulse-card p-4 h-100">
+      <h5 class="fw-bold mb-3 pb-2 border-bottom"><i class="fa-solid fa-user-shield text-teal me-2"></i>Account Information</h5>
+      
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-secondary">Full Name</label>
+        <input type="text" class="form-control" value="{{ user.full_name if user else current_user_name }}" readonly>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-secondary">Email Address</label>
+        <input type="email" class="form-control" value="{{ user.email if user else 'demo@carepulse.com' }}" readonly>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-secondary">System Role</label>
+        <input type="text" class="form-control" value="{{ user.role if user else current_user_role }}" readonly>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-secondary">Account Created</label>
+        <input type="text" class="form-control" value="{{ user.created_at if user else 'Active' }}" readonly>
+      </div>
+
+      <div class="alert alert-light border small text-muted">
+        <i class="fa-solid fa-shield-halved text-success me-1"></i>
+        Account credentials are encrypted using industry-standard bcrypt hashing.
+      </div>
+    </div>
+  </div>
+
+  <!-- Full-Width Row: Emergency Email Alert Configuration & Monitor -->
+  <div class="col-12">
+    <div class="carepulse-card p-4 border-teal shadow-sm">
+      <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-3 border-bottom gap-2">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="fa-solid fa-envelope-circle-check text-danger me-2"></i>Emergency Email Alert Dispatch</h5>
+          <p class="text-muted small mb-0">Automatically dispatch urgent email notifications to caregivers when critical abnormal vitals are detected.</p>
+        </div>
+        <div class="form-check form-switch fs-5">
+          <input class="form-check-input" type="checkbox" id="emailAlertEnabled" {% if email_config.enabled %}checked{% endif %}>
+          <label class="form-check-label fs-6 fw-bold" for="emailAlertEnabled">Email Alerts Active</label>
+        </div>
+      </div>
+
+      <!-- Live Email System Status Grid (Required Settings Fields) -->
+      <div class="row g-3 mb-4">
+        
+        <!-- 1. Email Alerts Status -->
+        <div class="col-md-4 col-sm-6">
+          <div class="p-3 bg-light rounded-3 border h-100">
+            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Email Alerts</span>
+            <div id="statusEmailAlerts">
+              {% if email_config.enabled %}
+                <span class="badge bg-success-subtle text-success border border-success px-3 py-2 fs-6 rounded-pill">
+                  <i class="fa-solid fa-circle-check me-1"></i> Enabled
+                </span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 py-2 fs-6 rounded-pill">
+                  <i class="fa-solid fa-circle-xmark me-1"></i> Disabled
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. SMTP Connection Status -->
+        <div class="col-md-4 col-sm-6">
+          <div class="p-3 bg-light rounded-3 border h-100">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="text-muted small fw-bold text-uppercase">SMTP Connection</span>
+              <button class="btn btn-link btn-sm p-0 text-decoration-none small text-teal" type="button" onclick="testSmtpConnection()">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Test Now
+              </button>
+            </div>
+            <div id="statusSmtpConnection">
+              {% if email_status and email_status.has_credentials %}
+                <span class="badge bg-info-subtle text-info border border-info px-3 py-2 fs-6 rounded-pill">
+                  <i class="fa-solid fa-server me-1"></i> Configured (Click Test)
+                </span>
+              {% else %}
+                <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2 fs-6 rounded-pill">
+                  <i class="fa-solid fa-triangle-exclamation me-1"></i> Not Connected
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Caregiver Email -->
+        <div class="col-md-4 col-sm-6">
+          <div class="p-3 bg-light rounded-3 border h-100">
+            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Caregiver Email</span>
+            <div class="fw-bold text-dark text-truncate fs-6" id="statusCaregiverEmail">
+              <i class="fa-solid fa-user-shield text-teal me-1"></i>
+              {{ email_status.caregiver_email if email_status else (email_config.recipient_email or 'Not configured') }}
+            </div>
+            <div class="small text-muted">Recipient for emergency critical alerts</div>
+          </div>
+        </div>
+
+        <!-- 4. Last Email Timestamp -->
+        <div class="col-md-6 col-sm-6">
+          <div class="p-3 bg-light rounded-3 border h-100">
+            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Last Email Sent / Attempted</span>
+            <div class="fw-bold text-secondary fs-6" id="statusLastEmailTime">
+              <i class="fa-solid fa-clock text-teal me-1"></i>
+              {{ email_status.last_email_time if (email_status and email_status.last_email_time) else 'None (No critical alerts yet)' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Last Email Status -->
+        <div class="col-md-6 col-sm-12">
+          <div class="p-3 bg-light rounded-3 border h-100">
+            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Last Email Status</span>
+            <div id="statusLastEmailDelivery">
+              {% if email_status and email_status.last_email_status == 'SENT' %}
+                <span class="badge bg-success text-white px-3 py-2 fs-6 rounded-pill">
+                  <i class="fa-solid fa-circle-check me-1"></i> SENT
+                </span>
+              {% elif email_status and email_status.last_email_status == 'FAILED' %}
+                <span class="badge bg-danger text-white px-3 py-2 fs-6 rounded-pill">
+                  <i class="fa-solid fa-circle-xmark me-1"></i> FAILED
+                </span>
+                {% if email_status.last_email_error %}
+                  <div class="small text-danger mt-1 text-truncate" title="{{ email_status.last_email_error }}">{{ email_status.last_email_error }}</div>
+                {% endif %}
+              {% else %}
+                <span class="badge bg-secondary text-white px-3 py-2 fs-6 rounded-pill">
+                  <i class="fa-solid fa-minus me-1"></i> NONE
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="emailConfigStatusAlert" class="d-none alert alert-dismissible fade show mb-3" role="alert">
+        <span id="emailConfigStatusText"></span>
+        <button type="button" class="btn-close" onclick="this.parentElement.classList.add('d-none')"></button>
+      </div>
+
+      <form id="emailSettingsForm" onsubmit="event.preventDefault(); saveEmailSettings();">
+        <div class="row g-3">
+          
+          <!-- Recipient Email -->
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-secondary">
+              <i class="fa-solid fa-user-doctor text-teal me-1"></i> Caregiver / Emergency Contact Recipient Email
+            </label>
+            <input type="email" class="form-control" id="recipientEmail" 
+                   value="{{ email_status.caregiver_email if (email_status and email_status.caregiver_email != 'Not configured') else email_config.recipient_email }}" 
+                   placeholder="e.g. caregiver@gmail.com, family@domain.com" required>
+            <div class="form-text small">Who receives real alert emails when critical heart rate, SpO2, or temperature occurs.</div>
+          </div>
+
+          <!-- Email Provider Preset -->
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-secondary">
+              <i class="fa-solid fa-server text-teal me-1"></i> Quick Provider Preset
+            </label>
+            <select class="form-select" id="emailProviderPreset" onchange="applyProviderPreset(this.value)">
+              <option value="gmail" selected>Google Gmail (smtp.gmail.com : 587)</option>
+              <option value="outlook">Microsoft Outlook / Office 365 (smtp.office365.com : 587)</option>
+              <option value="custom">Custom SMTP Server</option>
+            </select>
+            <div class="form-text small">Automatically configures STARTTLS port 587.</div>
+          </div>
+
+          <!-- Sender Email -->
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-secondary">
+              <i class="fa-solid fa-paper-plane text-teal me-1"></i> Gmail Sender Email (Your Google Account)
+            </label>
+            <input type="email" class="form-control" id="senderEmail" 
+                   value="{{ email_config.sender_email }}" 
+                   placeholder="e.g. your_gmail_address@gmail.com">
+            <div class="form-text small">Loaded from <code>.env</code> as <code>SMTP_USERNAME</code> / <code>ALERT_FROM_EMAIL</code>.</div>
+          </div>
+
+          <!-- Sender App Password -->
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-secondary">
+              <i class="fa-solid fa-key text-teal me-1"></i> 16-Character Google App Password
+            </label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="senderPassword" 
+                     placeholder="{% if email_config.sender_password %}•••••••• (App Password Configured){% else %}16-character App Password (e.g. abcd efgh ijkl mnop){% endif %}">
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('senderPassword')">
+                <i class="fa-solid fa-eye" id="toggleEyeIcon"></i>
+              </button>
+            </div>
+            <div class="form-text small">Loaded securely from <code>.env</code> (never exposed publicly).</div>
+          </div>
+
+          <!-- Advanced SMTP Settings (Collapsible) -->
+          <div class="col-12">
+            <div class="row g-3 pt-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-secondary">SMTP Server Host</label>
+                <input type="text" class="form-control" id="smtpServer" value="{{ email_config.smtp_server }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-secondary">SMTP Port (STARTTLS)</label>
+                <input type="number" class="form-control" id="smtpPort" value="{{ email_config.smtp_port }}">
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="col-12 d-flex flex-wrap gap-2 pt-3 border-top justify-content-between align-items-center">
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-primary" id="btnTestEmail" onclick="sendTestEmail()">
+                <i class="fa-solid fa-paper-plane me-1"></i> <span id="btnTestEmailText">SEND TEST EMAIL</span>
+              </button>
+              <button type="button" class="btn btn-outline-secondary" id="btnTestConn" onclick="testSmtpConnection()">
+                <i class="fa-solid fa-plug-circle-check me-1"></i> <span id="btnTestConnText">Verify SMTP Connection</span>
+              </button>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-carepulse-primary" id="btnSaveEmail">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Save Email Settings
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </form>
+
+      <!-- Google App Password Helper Guide -->
+      <div class="mt-4 pt-3 border-top">
+        <button class="btn btn-link btn-sm p-0 text-decoration-none text-teal fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#gmailGuideCollapse">
+          <i class="fa-solid fa-circle-question me-1"></i> How to generate a free 16-character Google App Password for Gmail &rarr;
+        </button>
+        <div class="collapse mt-2" id="gmailGuideCollapse">
+          <div class="card card-body bg-light border text-secondary small">
+            <ol class="mb-0 ps-3">
+              <li class="mb-1">Go to your <strong>Google Account</strong> &rarr; <strong>Security</strong>.</li>
+              <li class="mb-1">Make sure <strong>2-Step Verification</strong> is enabled.</li>
+              <li class="mb-1">Search for <strong>"App passwords"</strong> in the top search bar of Google Account.</li>
+              <li class="mb-1">Enter an app name like <code>CarePulse</code> and click <strong>Create</strong>.</li>
+              <li class="mb-1">Google gives you a 16-letter code (e.g. <code>abcd efgh ijkl mnop</code>). Paste it into the <strong>Sender App Password</strong> field above!</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function applyProviderPreset(preset) {
+  const server = document.getElementById('smtpServer');
+  const port = document.getElementById('smtpPort');
+  if (preset === 'gmail') {
+    server.value = 'smtp.gmail.com';
+    port.value = 587;
+  } else if (preset === 'outlook') {
+    server.value = 'smtp.office365.com';
+    port.value = 587;
+  }
+}
+
+function togglePasswordVisibility(id) {
+  const input = document.getElementById(id);
+  const icon = document.getElementById('toggleEyeIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+function showEmailStatus(message, isSuccess) {
+  const box = document.getElementById('emailConfigStatusAlert');
+  const text = document.getElementById('emailConfigStatusText');
+  box.className = `alert alert-dismissible fade show mb-3 ${isSuccess ? 'alert-success' : 'alert-danger'}`;
+  text.innerHTML = `<i class="fa-solid ${isSuccess ? 'fa-circle-check text-success' : 'fa-circle-exclamation text-danger'} me-2"></i> ${message}`;
+  box.classList.remove('d-none');
+}
+
+async function saveEmailSettings() {
+  const emailAlertEl = document.getElementById('emailAlertEnabled');
+  const recipientEl = document.getElementById('recipientEmail');
+  const senderEl = document.getElementById('senderEmail');
+  const passEl = document.getElementById('senderPassword');
+  const serverEl = document.getElementById('smtpServer');
+  const portEl = document.getElementById('smtpPort');
+  const debounceEl = document.getElementById('debounceMinutes');
+
+  const payload = {
+    enabled: emailAlertEl ? emailAlertEl.checked : true,
+    recipient_email: recipientEl ? recipientEl.value.trim() : '',
+    sender_email: senderEl ? senderEl.value.trim() : '',
+    sender_password: passEl ? passEl.value.trim() : '',
+    smtp_server: serverEl ? serverEl.value.trim() : 'smtp.gmail.com',
+    smtp_port: portEl ? (parseInt(portEl.value) || 587) : 587,
+    debounce_minutes: debounceEl ? (parseInt(debounceEl.value) || 5) : 5
+  };
+
+  const btn = document.getElementById('btnSaveEmail');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+  try {
+    const res = await fetch('/api/email/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    showEmailStatus(data.message || 'Settings saved.', data.success);
+    if (typeof showCarePulseToast === 'function') {
+      showCarePulseToast('Email Settings', data.message, data.success ? 'success' : 'danger');
+    }
+  } catch (err) {
+    showEmailStatus('Network error saving settings: ' + err, false);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> Save Email Settings';
+  }
+}
+
+async function sendTestEmail() {
+  const recipient = document.getElementById('recipientEmail').value.trim();
+  const senderEmail = document.getElementById('senderEmail').value.trim();
+  const senderPassword = document.getElementById('senderPassword').value.trim();
+  const smtpServer = document.getElementById('smtpServer').value.trim();
+  const smtpPort = parseInt(document.getElementById('smtpPort').value) || 587;
+
+  if (!recipient) {
+    showEmailStatus('Please specify a recipient email address first.', false);
+    return;
+  }
+
+  const btn = document.getElementById('btnTestEmail');
+  const btnText = document.getElementById('btnTestEmailText');
+  btn.disabled = true;
+  btnText.textContent = 'Sending Test Email...';
+
+  try {
+    const res = await fetch('/api/email/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient_email: recipient,
+        sender_email: senderEmail,
+        sender_password: senderPassword,
+        smtp_server: smtpServer,
+        smtp_port: smtpPort
+      })
+    });
+    const data = await res.json();
+    showEmailStatus(data.message, data.success);
+    if (typeof showCarePulseToast === 'function') {
+      showCarePulseToast('Email Test', data.message, data.success ? 'success' : 'danger');
+    }
+  } catch (err) {
+    showEmailStatus('Failed to send test email: ' + err, false);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'SEND TEST EMAIL';
+    refreshEmailStatus();
+  }
+}
+
+async function testSmtpConnection() {
+  const senderEmail = document.getElementById('senderEmail').value.trim();
+  const senderPassword = document.getElementById('senderPassword').value.trim();
+  const smtpServer = document.getElementById('smtpServer').value.trim();
+  const smtpPort = parseInt(document.getElementById('smtpPort').value) || 587;
+
+  const btn = document.getElementById('btnTestConn');
+  const btnText = document.getElementById('btnTestConnText');
+  const badge = document.getElementById('statusSmtpConnection');
+
+  btn.disabled = true;
+  btnText.textContent = 'Testing Handshake...';
+  badge.innerHTML = '<span class="badge bg-warning text-dark px-3 py-2 fs-6 rounded-pill"><span class="spinner-border spinner-border-sm me-1"></span> Connecting...</span>';
+
+  try {
+    const res = await fetch('/api/email/test-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender_email: senderEmail,
+        sender_password: senderPassword,
+        smtp_server: smtpServer,
+        smtp_port: smtpPort
+      })
+    });
+    const data = await res.json();
+    showEmailStatus(data.message, data.success);
+
+    if (data.success) {
+      badge.innerHTML = '<span class="badge bg-success text-white px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i> Connected</span>';
+    } else {
+      badge.innerHTML = '<span class="badge bg-danger text-white px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i> Not Connected</span>';
+    }
+
+    if (typeof showCarePulseToast === 'function') {
+      showCarePulseToast('SMTP Handshake', data.message, data.success ? 'success' : 'danger');
+    }
+  } catch (err) {
+    showEmailStatus('Failed to test SMTP connection: ' + err, false);
+    badge.innerHTML = '<span class="badge bg-danger text-white px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i> Connection Error</span>';
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Verify SMTP Connection';
+  }
+}
+
+async function refreshEmailStatus() {
+  try {
+    const res = await fetch('/api/email/status');
+    const data = await res.json();
+    if (!data.success || !data.status) return;
+
+    const s = data.status;
+    const alertBadge = document.getElementById('statusEmailAlerts');
+    if (alertBadge) {
+      alertBadge.innerHTML = s.enabled ? 
+        '<span class="badge bg-success-subtle text-success border border-success px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i> Enabled</span>' :
+        '<span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i> Disabled</span>';
+    }
+
+    const cgEl = document.getElementById('statusCaregiverEmail');
+    if (cgEl) {
+      cgEl.innerHTML = `<i class="fa-solid fa-user-shield text-teal me-1"></i> ${s.caregiver_email}`;
+    }
+
+    const timeEl = document.getElementById('statusLastEmailTime');
+    if (timeEl) {
+      timeEl.innerHTML = `<i class="fa-solid fa-clock text-teal me-1"></i> ${s.last_email_time || 'None (No critical alerts yet)'}`;
+    }
+
+    const deliveryBadge = document.getElementById('statusLastEmailDelivery');
+    if (deliveryBadge) {
+      if (s.last_email_status === 'SENT') {
+        deliveryBadge.innerHTML = '<span class="badge bg-success text-white px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i> SENT</span>';
+      } else if (s.last_email_status === 'FAILED') {
+        let errHtml = s.last_email_error ? `<div class="small text-danger mt-1 text-truncate" title="${s.last_email_error}">${s.last_email_error}</div>` : '';
+        deliveryBadge.innerHTML = `<span class="badge bg-danger text-white px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i> FAILED</span>${errHtml}`;
+      } else {
+        deliveryBadge.innerHTML = '<span class="badge bg-secondary text-white px-3 py-2 fs-6 rounded-pill"><i class="fa-solid fa-minus me-1"></i> NONE</span>';
+      }
+    }
+  } catch (e) {
+    console.warn('Status refresh error:', e);
+  }
+}
+</script>
+{% endblock %}

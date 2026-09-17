@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Sign In — CarePulse{% endblock %}
+
+{% block public_content %}
+<div class="auth-page-container">
+  <div class="auth-card">
+    
+    <div class="auth-brand">
+      <div class="brand-badge">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <div>
+        <h3 class="fw-bold mb-0">CarePulse</h3>
+        <span class="small text-muted">Universal Healthcare Portal</span>
+      </div>
+    </div>
+
+    <h4 class="fw-bold mb-1">Account Sign In</h4>
+    <p class="text-secondary small mb-4">Sign in using your Username or Email to access your portal.</p>
+
+    <!-- Flash messages inside card -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('patient_login_view', next=request.args.get('next')) }}" id="patientLoginForm">
+      <!-- Email Field -->
+      <div class="mb-3">
+        <label for="loginEmail" class="form-label small fw-bold text-secondary">Username or Email Address</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-user-shield text-muted"></i></span>
+          <input type="text" class="form-control" id="loginEmail" name="email" placeholder="e.g. admin, athira, or email" required>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <label for="loginPassword" class="form-label small fw-bold text-secondary">Password</label>
+          <a href="#" class="small text-muted" onclick="alert('Please contact your clinic administrator to reset your password.'); return false;">Forgot Password?</a>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+          <input type="password" class="form-control" id="loginPassword" name="password" placeholder="••••••••" required>
+          <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()">
+            <i class="fa-regular fa-eye" id="togglePasswordIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Remember Me -->
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me">
+        <label class="form-check-label small text-secondary" for="rememberMe">Remember me on this device</label>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-white shadow-sm mb-3" style="background: var(--deep); border: none; border-radius: var(--radius-sm);">
+        <i class="fa-solid fa-right-to-bracket me-1"></i> SIGN IN
+      </button>
+    </form>
+
+    <!-- Caregiver Alternative Link -->
+    <div class="p-3 bg-light rounded text-center mb-3 border">
+      <span class="small text-secondary d-block mb-1">Are you an authorized caregiver or relative?</span>
+      <a href="{{ url_for('caregiver_login_view') }}" class="btn btn-sm btn-outline-dark fw-bold w-100">
+        <i class="fa-solid fa-user-shield me-1"></i> Caregiver Login
+      </a>
+    </div>
+
+    <div class="text-center mt-3 pt-3 border-top">
+      <span class="text-secondary small">Don't have a patient account?</span>
+      <a href="{{ url_for('patient_register_view') }}" class="small fw-bold text-teal ms-1">Register as Patient</a>
+    </div>
+
+    <div class="text-center mt-3 pt-3 border-top">
+      <a href="{{ url_for('home_view') }}" class="small fw-bold text-secondary"><i class="fa-solid fa-arrow-left me-1"></i>Back to Home</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePasswordVisibility() {
+  const pwdInput = document.getElementById('loginPassword');
+  const icon = document.getElementById('togglePasswordIcon');
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Caregiver Portal — CarePulse{% endblock %}
+
+{% block header_title %}
+Caregiver Health Monitor
+{% endblock %}
+
+{% block header_subtitle %}
+Real-time physiological telemetry and emergency alert monitoring for your assigned patients.
+{% endblock %}
+
+{% block content %}
+<div class="caregiver-dashboard-container">
+  
+  <!-- Welcome Banner -->
+  <div class="carepulse-card mb-4 p-4" style="background: linear-gradient(135deg, rgba(23,182,196,0.1), rgba(6,58,82,0.05)); border-left: 5px solid var(--teal);">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h4 class="fw-bold mb-1 text-dark">
+          <i class="fa-solid fa-user-shield text-teal me-2"></i>Welcome, {{ caregiver_name }}
+        </h4>
+        <p class="text-secondary small mb-0">
+          Authorized Caregiver &bull; You are currently monitoring <strong>{{ assigned_patients|length }}</strong> assigned patient(s).
+        </p>
+      </div>
+      <div>
+        <span class="badge bg-dark px-3 py-2 rounded-pill">
+          <i class="fa-solid fa-satellite-dish text-success me-1"></i> Live Hardware Telemetry
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Patients Grid -->
+  <h5 class="fw-bold mb-3 text-dark">
+    <i class="fa-solid fa-hospital-user text-teal me-2"></i>Assigned Patients
+  </h5>
+
+  {% if not assigned_patients %}
+    <div class="carepulse-card p-5 text-center">
+      <i class="fa-solid fa-user-slash text-muted mb-3" style="font-size: 3rem;"></i>
+      <h5 class="fw-bold">No Patients Assigned</h5>
+      <p class="text-secondary small mb-3">You do not have any patients linked to your caregiver account yet.</p>
+      <a href="{{ url_for('caregivers_view') }}" class="btn btn-sm btn-outline-teal">Manage Patient Links</a>
+    </div>
+  {% else %}
+    <div class="row g-4 mb-4">
+      {% for item in assigned_patients %}
+        {% set p = item.patient %}
+        {% set r = item.latest_reading %}
+        {% set is_connected = item.is_connected %}
+        {% set alerts = item.recent_alerts %}
+        
+        <div class="col-lg-6">
+          <div class="carepulse-card h-100 p-4 border-top border-4 {% if is_connected %}border-success{% else %}border-secondary{% endif %}">
+            
+            <!-- Patient Header -->
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+              <div>
+                <h5 class="fw-bold mb-0 text-dark">{{ p.name }}</h5>
+                <span class="small text-muted">Patient ID: <code class="fw-bold">{{ p.patient_id }}</code> &bull; {{ p.gender }}, {{ p.age }} yrs</span>
+              </div>
+              <div>
+                {% if is_connected %}
+                  <span class="badge bg-success px-3 py-2 rounded-pill">
+                    <i class="fa-solid fa-circle me-1" style="font-size: 0.6rem;"></i> CONNECTED &bull; LIVE
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary px-3 py-2 rounded-pill">
+                    <i class="fa-solid fa-circle-xmark me-1"></i> OFFLINE
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            
+            <!-- Assigned Doctor Contact -->
+            <div class="bg-light border rounded p-3 mb-3">
+              <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-user-doctor text-primary me-2"></i>Assigned Doctor</h6>
+              <div class="small text-muted">
+                <strong>Name:</strong> {{ item.assigned_doctor.full_name }}<br>
+                <strong>Email:</strong> <a href="mailto:{{ item.assigned_doctor.email }}">{{ item.assigned_doctor.email }}</a><br>
+                <strong>Emergency Phone:</strong> {{ item.assigned_doctor.phone }}
+              </div>
+            </div>
+
+            <!-- Vitals Tiles -->
+            <div class="row g-3 mb-3">
+              <!-- Heart Rate -->
+              <div class="col-4">
+                <div class="p-3 bg-light rounded text-center border">
+                  <span class="small text-muted d-block mb-1">Heart Rate</span>
+                  <div class="fs-4 fw-bold text-danger">
+                    {% if is_connected and r %}
+                      {{ r.heart_rate|round(1) }} <small class="fs-6 text-muted">BPM</small>
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- SpO2 -->
+              <div class="col-4">
+                <div class="p-3 bg-light rounded text-center border">
+                  <span class="small text-muted d-block mb-1">SpO₂</span>
+                  <div class="fs-4 fw-bold text-primary">
+                    {% if is_connected and r %}
+                      {{ r.spo2|round(1) }} <small class="fs-6 text-muted">%</small>
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Temperature -->
+              <div class="col-4">
+                <div class="p-3 bg-light rounded text-center border">
+                  <span class="small text-muted d-block mb-1">Temperature</span>
+                  <div class="fs-4 fw-bold text-warning">
+                    {% if is_connected and r %}
+                      {{ r.temperature|round(1) }} <small class="fs-6 text-muted">°C</small>
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Last Update Info -->
+            <div class="d-flex justify-content-between align-items-center small text-muted mb-3">
+              <span>
+                <i class="fa-regular fa-clock me-1"></i> Last update: 
+                <strong>
+                  {% if is_connected and r and r.timestamp %}
+                    {{ r.timestamp }}
+                  {% else %}
+                    No recent data (Waiting for ESP32)
+                  {% endif %}
+                </strong>
+              </span>
+              <span>
+                Status: 
+                {% if is_connected %}
+                  <strong class="text-success">NORMAL</strong>
+                {% else %}
+                  <strong class="text-secondary">OFFLINE</strong>
+                {% endif %}
+              </span>
+            </div>
+
+            <!-- Patient Specific Recent Alerts -->
+            <h6 class="fw-bold small text-dark border-top pt-2 mb-2">
+              <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Recent Alerts
+            </h6>
+            {% if alerts %}
+              <div class="list-group list-group-flush small">
+                {% for a in alerts %}
+                  <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                    <div>
+                      <span class="badge {% if a.severity=='Critical' %}bg-danger{% else %}bg-warning text-dark{% endif %} me-1">
+                        {{ a.severity }}
+                      </span>
+                      <strong>{{ a.sensor_type }}</strong>: {{ a.value }} 
+                      <span class="text-muted">({{ a.message }})</span>
+                    </div>
+                    <span class="text-muted" style="font-size: 0.72rem;">{{ a.created_at }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-muted small fst-italic py-1">No active emergency alerts recorded for this patient.</div>
+            {% endif %}
+
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Emergency Alert Explanation & Protocol -->
+  <div class="carepulse-card p-4">
+    <h5 class="fw-bold mb-3 text-dark">
+      <i class="fa-solid fa-shield-heart text-danger me-2"></i>Emergency Alert Notification Protocol
+    </h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="p-3 border rounded h-100">
+          <h6 class="fw-bold text-danger mb-1"><i class="fa-solid fa-heart-pulse me-1"></i> Heart Rate Breaches</h6>
+          <p class="small text-secondary mb-0">
+            Triggers when heart rate crosses critical threshold (&gt;120 BPM or &lt;45 BPM). Dispatches immediate alert email to registered caregiver.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 border rounded h-100">
+          <h6 class="fw-bold text-primary mb-1"><i class="fa-solid fa-lungs me-1"></i> Low Oxygen Saturation (SpO₂)</h6>
+          <p class="small text-secondary mb-0">
+            Triggers when blood oxygen saturation drops below critical threshold (&lt;90%). Automated email specifies actual % and patient ID.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 border rounded h-100">
+          <h6 class="fw-bold text-warning mb-1"><i class="fa-solid fa-temperature-high me-1"></i> Temperature Extremes</h6>
+          <p class="small text-secondary mb-0">
+            Triggers when body temperature exceeds high critical limit (&gt;38.4°C / 101.1°F). Automated email informs caregiver to seek medical attention.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

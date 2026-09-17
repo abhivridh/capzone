@@ -1,0 +1,98 @@
+
+{% extends "base.html" %}
+
+{% block title %}Admin Sign In — CarePulse
+<script>
+function togglePasswordVisibility(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+{% endblock %}
+
+{% block public_content %}
+<div class="auth-page-container">
+  <div class="auth-card">
+    
+    <div class="auth-brand">
+      <div class="brand-badge bg-danger">
+        <i class="fa-solid fa-shield-halved text-white"></i>
+      </div>
+      <div>
+        <h3 class="fw-bold mb-0">CarePulse</h3>
+        <span class="small text-muted">Administrator Portal</span>
+      </div>
+    </div>
+
+    <h4 class="fw-bold mb-1">Admin Sign In</h4>
+    <p class="text-secondary small mb-4">Secure system oversight and management.</p>
+
+    <!-- Flash messages inside card -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('admin_bp.admin_login') }}">
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-secondary">Admin Username or Email</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-user-shield text-muted"></i></span>
+          <input type="text" class="form-control" name="email" placeholder="admin or admin@carepulse.com" required autofocus>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label small fw-bold text-secondary">Password</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+          <input type="password" class="form-control" id="adminPassword" name="password" required>
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('adminPassword', 'toggleAdminPasswordIcon')">
+              <i class="fa-regular fa-eye" id="toggleAdminPasswordIcon"></i>
+            </button>
+          </div>
+      </div>
+
+      <button type="submit" class="btn btn-danger w-100 py-2 fw-bold text-white shadow-sm mb-3" style="border-radius: var(--radius-sm);">
+        <i class="fa-solid fa-right-to-bracket me-1"></i> SIGN IN AS ADMIN
+      </button>
+    </form>
+    
+    <div class="text-center mt-3 pt-3 border-top">
+      <a href="{{ url_for('home_view') }}" class="small fw-bold text-secondary"><i class="fa-solid fa-arrow-left me-1"></i>Back to Home</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePasswordVisibility(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+{% endblock %}

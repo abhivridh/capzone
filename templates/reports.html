@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Health Reports — CarePulse{% endblock %}
+
+{% block header_title %}
+Clinical Health Reports
+{% endblock %}
+
+{% block header_subtitle %}
+Consolidated diagnostic telemetry summaries, vital averages, and alert logs.
+{% endblock %}
+
+{% block content %}
+<!-- Selection & Generation Controls (Hidden when printing) -->
+<div class="carepulse-card mb-4 p-4 no-print">
+  <form method="GET" action="{{ url_for('reports_view') }}" class="row g-3 align-items-end">
+    
+    <div class="col-md-4">
+      <label class="form-label small fw-bold text-secondary">Select Patient</label>
+      <select class="form-select" name="patient_id">
+        {% for p in patients %}
+          <option value="{{ p.patient_id }}" {% if p.patient_id == patient.patient_id %}selected{% endif %}>
+            {{ p.name }} ({{ p.patient_id }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label small fw-bold text-secondary">Start Date</label>
+      <input type="date" class="form-control" name="start_date" value="{{ request.args.get('start_date', '') }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label small fw-bold text-secondary">End Date</label>
+      <input type="date" class="form-control" name="end_date" value="{{ request.args.get('end_date', '') }}">
+    </div>
+
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-outline-teal w-100 fw-bold" style="color: var(--mid); border-color: var(--mid);">
+        FILTER
+      </button>
+      <button type="button" class="btn btn-carepulse-primary w-100" onclick="window.print()">
+        <i class="fa-solid fa-print me-1"></i> PRINT
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- PRINTABLE MEDICAL REPORT DOCUMENT -->
+<div class="carepulse-card p-5 bg-white shadow-sm" id="printableReportDoc">
+  
+  <!-- Report Header -->
+  <div class="d-flex justify-content-between align-items-center pb-4 mb-4 border-bottom">
+    <div class="d-flex align-items-center gap-3">
+      <div class="brand-icon" style="width: 48px; height: 48px; font-size: 1.5rem;">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <div>
+        <h2 class="fw-bold mb-0 text-dark">CAREPULSE</h2>
+        <span class="text-teal fw-semibold small" style="letter-spacing: 0.06em;">IoT-BASED HEALTHCARE MONITORING SYSTEM</span>
+      </div>
+    </div>
+    <div class="text-end">
+      <h5 class="fw-bold text-secondary mb-0">TELEMETRIC HEALTH SUMMARY</h5>
+      <span class="text-muted small">Generated on: <strong class="text-dark" id="reportGenDate"></strong></span>
+    </div>
+  </div>
+
+  <!-- Patient Details Grid -->
+  <div class="p-3 rounded-3 bg-light border mb-4">
+    <div class="row g-3">
+      <div class="col-sm-3">
+        <span class="small text-muted d-block">Patient Name</span>
+        <strong class="fs-6 text-dark">{{ patient.name if patient else 'Demo Patient' }}</strong>
+      </div>
+      <div class="col-sm-3">
+        <span class="small text-muted d-block">Patient Identifier</span>
+        <strong class="fs-6 text-dark">{{ patient.patient_id if patient else 'P001' }}</strong>
+      </div>
+      <div class="col-sm-3">
+        <span class="small text-muted d-block">Age / Gender</span>
+        <strong class="fs-6 text-dark">{{ patient.age if patient else 65 }} yrs / {{ patient.gender if patient else 'Male' }}</strong>
+      </div>
+      <div class="col-sm-3">
+        <span class="small text-muted d-block">Assigned Hardware Unit</span>
+        <strong class="fs-6 text-dark">ESP32-001 (CarePulse IoT)</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monitoring Statistics Summary -->
+  <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-simple text-teal me-2"></i>Monitored Physiological Baseline Metrics</h5>
+  <div class="row g-3 mb-4">
+    
+    <!-- Heart Rate Stats -->
+    <div class="col-md-4">
+      <div class="p-3 border rounded-3 text-center bg-light">
+        <span class="badge bg-danger-subtle text-danger mb-2">HEART RATE (BPM)</span>
+        <div class="display-6 fw-bold text-dark">{{ stats.hr_avg }}</div>
+        <div class="text-muted small mt-1">Average BPM</div>
+        <div class="small border-top mt-2 pt-2 text-secondary">
+          Min: <strong>{{ stats.hr_min }}</strong> &bull; Max: <strong>{{ stats.hr_max }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- SpO2 Stats -->
+    <div class="col-md-4">
+      <div class="p-3 border rounded-3 text-center bg-light">
+        <span class="badge px-3 py-1 mb-2" style="background: #E3F6F6; color: var(--mid);">OXYGEN (SpO₂ %)</span>
+        <div class="display-6 fw-bold text-dark">{{ stats.spo2_avg }}%</div>
+        <div class="text-muted small mt-1">Mean Saturation</div>
+        <div class="small border-top mt-2 pt-2 text-secondary">
+          Min: <strong>{{ stats.spo2_min }}%</strong> &bull; Max: <strong>{{ stats.spo2_max }}%</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Temperature Stats -->
+    <div class="col-md-4">
+      <div class="p-3 border rounded-3 text-center bg-light">
+        <span class="badge px-3 py-1 mb-2" style="background: #FFF2E0; color: #E08E24;">TEMPERATURE (°C)</span>
+        <div class="display-6 fw-bold text-dark">{{ stats.temp_avg }}°C</div>
+        <div class="text-muted small mt-1">Mean Core Temp</div>
+        <div class="small border-top mt-2 pt-2 text-secondary">
+          Min: <strong>{{ stats.temp_min }}°C</strong> &bull; Max: <strong>{{ stats.temp_max }}°C</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Alerts Incident Log in Report -->
+  <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Triggered Monitoring Incident Log</h5>
+  <div class="table-responsive mb-4">
+    <table class="table table-bordered table-sm align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Time Triggered</th>
+          <th>Sensor Type</th>
+          <th>Observed Value</th>
+          <th>Severity</th>
+          <th>Incident Message</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if alerts %}
+          {% for a in alerts %}
+            <tr>
+              <td class="small">{{ a.created_at }}</td>
+              <td><strong>{{ a.sensor_type }}</strong></td>
+              <td>{{ a.value }}</td>
+              <td>
+                <span class="badge {% if a.severity=='Critical' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                  {{ a.severity }}
+                </span>
+              </td>
+              <td class="small">{{ a.message }}</td>
+              <td>
+                <span class="badge {% if a.status=='Active' %}bg-danger{% else %}bg-success{% endif %}">
+                  {{ a.status }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center py-3 text-muted small">
+              No threshold breach alerts logged during this reporting window.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  
+  <!-- Doctor Review Workflow -->
+  {% if current_user_role|lower == 'doctor' %}
+  <div class="carepulse-card mt-4 p-4 border-primary border no-print">
+    <h5 class="text-primary"><i class="fa-solid fa-user-doctor"></i> Clinical Review</h5>
+    <form action="/doctor/report_review" method="POST">
+      <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+      <div class="mb-3">
+        <label class="form-label">Review Status</label>
+        <select name="review_status" class="form-select">
+          <option value="Reviewed">Reviewed</option>
+          <option value="Needs Follow-up">Needs Follow-up</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Clinical Comments</label>
+        <textarea name="doctor_comment" class="form-control" rows="3" placeholder="Enter clinical observation..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Save Review</button>
+    </form>
+  </div>
+  {% endif %}
+  
+  {% if review_data %}
+  <div class="alert alert-info mt-4">
+    <h6><i class="fa-solid fa-check-circle"></i> Last Doctor Review: {{ review_data.doctor_review_status }}</h6>
+    <p class="mb-0">"{{ review_data.doctor_comment }}"</p>
+    <small class="text-muted">Reviewed on: {{ review_data.reviewed_at }}</small>
+  </div>
+  {% endif %}
+
+  <!-- Monitoring Summary & Sign-off -->
+  <div class="p-3 bg-light rounded-3 border mb-4">
+    <h6 class="fw-bold text-dark mb-1">Monitoring Summary:</h6>
+    <p class="text-secondary small mb-0">
+      Continuous telemetric evaluation completed across {{ stats.total_readings }} sensor telemetry snapshots. Monitored cardiac frequency, pulse oximetry, and temperature trend curves demonstrate physiological stability under configured baseline thresholds.
+    </p>
+  </div>
+
+  <div class="row pt-4 mt-4 border-top">
+    <div class="col-6">
+      <div class="small text-muted mb-4">Authorized Attending Signature:</div>
+      <div style="border-bottom: 1px solid #999; width: 220px; height: 30px;"></div>
+      <span class="small text-muted d-block mt-1">Dr. Sarah Mitchell, MD</span>
+    </div>
+    <div class="col-6 text-end">
+      <div class="small text-muted fst-italic">CarePulse Academic Monitoring System</div>
+      <span class="badge bg-light text-muted border mt-2">Document Ref: CP-RPT-{{ patient.patient_id if patient else 'P001' }}-2026</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('reportGenDate').textContent = new Date().toLocaleString();
+</script>
+{% endblock %}

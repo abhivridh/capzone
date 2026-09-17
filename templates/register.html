@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — CarePulse{% endblock %}
+
+{% block public_content %}
+<div class="auth-page-container">
+  <div class="auth-card">
+    
+    <div class="auth-brand">
+      <div class="brand-badge">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <div>
+        <h3 class="fw-bold mb-0">CarePulse</h3>
+        <span class="small text-muted">Healthcare IoT Platform</span>
+      </div>
+    </div>
+
+    <h4 class="fw-bold mb-1">Create your CarePulse account</h4>
+    <p class="text-secondary small mb-4">Join CarePulse to monitor and manage real-time health data.</p>
+
+    <!-- Flash messages inside card -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register_view') }}" id="registerForm">
+      
+      <!-- Full Name -->
+      <div class="mb-3">
+        <label for="fullName" class="form-label small fw-bold text-secondary">Full Name</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-regular fa-user text-muted"></i></span>
+          <input type="text" class="form-control" id="fullName" name="full_name" placeholder="John Doe" required>
+        </div>
+      </div>
+
+      <!-- Email Address -->
+      <div class="mb-3">
+        <label for="email" class="form-label small fw-bold text-secondary">Email Address</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-regular fa-envelope text-muted"></i></span>
+          <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
+        </div>
+      </div>
+
+      <!-- Phone Number -->
+      <div class="mb-3">
+        <label for="phone" class="form-label small fw-bold text-secondary">Phone Number</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-phone text-muted"></i></span>
+          <input type="tel" class="form-control" id="phone" name="phone" placeholder="+1 555-0199" required>
+        </div>
+      </div>
+
+      <!-- Role Selection -->
+      <div class="mb-3">
+        <label for="role" class="form-label small fw-bold text-secondary">Account Role</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-id-badge text-muted"></i></span>
+          <select class="form-select" id="role" name="role" required>
+            <option value="Patient" selected>Patient</option>
+            <option value="Doctor">Doctor</option>
+            <option value="Caregiver">Caregiver</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Password with Show/Hide toggle -->
+      <div class="mb-3">
+        <label for="password" class="form-label small fw-bold text-secondary">Password (Min. 8 characters)</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+          <input type="password" class="form-control" id="password" name="password" minlength="8" placeholder="••••••••" required>
+          <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" title="Show / Hide Password">
+            <i class="fa-regular fa-eye" id="togglePasswordIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="mb-4">
+        <label for="confirmPassword" class="form-label small fw-bold text-secondary">Confirm Password</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="fa-solid fa-shield-halved text-muted"></i></span>
+          <input type="password" class="form-control" id="confirmPassword" name="confirm_password" minlength="8" placeholder="••••••••" required>
+        </div>
+      <!-- Emergency Contact / Caregiver Section -->
+      <div class="card bg-light border-0 p-3 mb-4 rounded-3" id="caregiverSection">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="fa-solid fa-user-shield text-danger"></i>
+          <span class="fw-bold small text-dark">Emergency Contact / Caregiver</span>
+        </div>
+        <p class="text-muted small mb-3" style="font-size: 0.78rem;">
+          Designate a family member or caregiver to receive instant email alerts on their mobile phone if critical vitals occur.
+        </p>
+
+        <!-- Caregiver Name -->
+        <div class="mb-2">
+          <label for="caregiverName" class="form-label small fw-bold text-secondary mb-1">Caregiver Name</label>
+          <input type="text" class="form-control form-control-sm" id="caregiverName" name="caregiver_name" placeholder="e.g. Jane Doe">
+        </div>
+
+        <!-- Relationship -->
+        <div class="mb-2">
+          <label for="caregiverRelationship" class="form-label small fw-bold text-secondary mb-1">Relationship with Patient</label>
+          <select class="form-select form-select-sm" id="caregiverRelationship" name="caregiver_relationship">
+            <option value="Daughter">Daughter</option>
+            <option value="Son">Son</option>
+            <option value="Husband">Husband</option>
+            <option value="Wife">Wife</option>
+            <option value="Parent">Parent</option>
+            <option value="Other" selected>Other Caregiver</option>
+          </select>
+        </div>
+
+        <!-- Caregiver Email -->
+        <div class="mb-2">
+          <label for="caregiverEmail" class="form-label small fw-bold text-secondary mb-1">Caregiver Email (for Alerts)</label>
+          <input type="email" class="form-control form-control-sm" id="caregiverEmail" name="caregiver_email" placeholder="caregiver@gmail.com">
+          <div class="form-text small" style="font-size: 0.72rem;">Emergency alert notifications will be sent to this email.</div>
+        </div>
+
+        <!-- Caregiver Phone -->
+        <div class="mb-1">
+          <label for="caregiverPhone" class="form-label small fw-bold text-secondary mb-1">Caregiver Phone (Optional)</label>
+          <input type="tel" class="form-control form-control-sm" id="caregiverPhone" name="caregiver_phone" placeholder="+1 555-0199">
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-white shadow-sm" style="background: var(--mid); border: none; border-radius: var(--radius-sm);">
+        CREATE ACCOUNT
+      </button>
+    </form>
+
+<!-- CLIENT SIDE FORM VALIDATION -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if(form) {
+        form.addEventListener('submit', function(e) {
+            let valid = true;
+            let errorMessage = '';
+
+            const password = form.querySelector('input[name="password"]')?.value || '';
+            const confirm = form.querySelector('input[name="confirm_password"]')?.value || '';
+            const phone = form.querySelector('input[name="phone"]')?.value || '';
+            const age = form.querySelector('input[name="age"]')?.value || '';
+
+            // 1. Password Match Validation
+            if(password !== confirm) {
+                valid = false;
+                errorMessage += '- Passwords do not match.\n';
+            }
+
+            // 2. Password Strength Validation (at least 8 chars, 1 letter, 1 number)
+            const strongRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+            if(password && !strongRegex.test(password)) {
+                valid = false;
+                errorMessage += '- Password must be at least 8 characters long and contain both letters and numbers.\n';
+            }
+
+            // 3. Age validation
+            if (age && (age < 0 || age > 120)) {
+                valid = false;
+                errorMessage += '- Please enter a realistic age between 0 and 120.\n';
+            }
+
+            if(!valid) {
+                e.preventDefault();
+                alert("Please fix the following errors:\n\n" + errorMessage);
+            }
+        });
+    }
+});
+</script>
+
+
+    <div class="text-center mt-4 pt-3 border-top">
+      <span class="text-secondary small">Already have an account?</span>
+      <a href="{{ url_for('login_view') }}" class="small fw-bold text-teal ms-1">Sign In</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Password Visibility Toggle
+  const toggleBtn = document.getElementById('togglePasswordBtn');
+  const pwdInput = document.getElementById('password');
+  const pwdIcon = document.getElementById('togglePasswordIcon');
+  if (toggleBtn && pwdInput && pwdIcon) {
+    toggleBtn.addEventListener('click', () => {
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        pwdIcon.className = 'fa-regular fa-eye-slash';
+      } else {
+        pwdInput.type = 'password';
+        pwdIcon.className = 'fa-regular fa-eye';
+      }
+    });
+  }
+</script>
+{% endblock %}

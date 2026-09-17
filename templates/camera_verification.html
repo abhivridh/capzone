@@ -1,0 +1,254 @@
+
+{% extends "base.html" %}
+{% block title %}Camera Monitoring — CarePulse{% endblock %}
+{% block header_title %}Remote Patient Monitoring{% endblock %}
+{% block header_subtitle %}AI-assisted visual monitoring to verify patient status.{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-2"></i>Back</a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="carepulse-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-video text-primary me-2"></i>Remote Patient Feed ({{ patient.name }})</h5>
+                <span class="badge bg-danger pulse-recording d-none" id="recBadge"><i class="fa-solid fa-circle me-1"></i> LIVE REC</span>
+            </div>
+            
+            <p class="small text-muted mb-4">Establishing encrypted connection to the patient's remote bedside monitoring camera.</p>
+            
+            <div class="bg-dark rounded mb-4 overflow-hidden" style="min-height: 400px; position: relative; border: 2px solid #1e293b;">
+                
+                
+                {% if not patient.camera_enabled %}
+                <!-- Offline State (Disabled by Patient) -->
+                <div class="w-100 h-100 d-flex flex-column justify-content-center align-items-center text-secondary" style="position: absolute; top:0; left:0; background: #0f172a; z-index: 10;">
+                    <i class="fa-solid fa-ban mb-3 text-danger" style="font-size: 3rem;"></i>
+                    <p class="mb-0 fw-bold text-danger">Connection Refused</p>
+                    <small>The patient has opted out of remote video monitoring.</small>
+                </div>
+                {% endif %}
+<!-- Offline State -->
+                <div id="camPlaceholder" class="w-100 h-100 d-flex flex-column justify-content-center align-items-center text-secondary" style="position: absolute; top:0; left:0; background: #0f172a; z-index: 2;">
+                    <i class="fa-solid fa-video-slash mb-3" style="font-size: 3rem;"></i>
+                    <p class="mb-0 fw-bold">Camera Feed Offline</p>
+                    <small>Awaiting Doctor Activation...</small>
+                </div>
+
+                <!-- Simulated Remote Feed State -->
+                <div id="remoteFeed" class="w-100 h-100 d-none" style="position: absolute; top:0; left:0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); z-index: 1;">
+                    <!-- Live Patient Feed Image -->
+                    {% if patient.gender == 'Male' %}
+                    {% set img_path = 'img/patient_male.jpg' %}
+                    {% elif patient.gender == 'Female' %}
+                    {% set img_path = 'img/patient_female.jpg' %}
+                    {% else %}
+                    {% set img_path = 'img/patient_demo.jpg' %}
+                    {% endif %}
+                    
+                    <div class="w-100 h-100 patient-breathing" style="background-image: url('{{ url_for('static', filename=img_path) }}'); background-size: cover; background-position: center; transform-origin: center center;">
+                    </div>
+                    
+                    <!-- Static Noise Overlay -->
+                    <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 2px); pointer-events: none;"></div>
+
+                    
+                    <!-- AI Scanning Overlay -->
+                    <div class="scan-line"></div>
+                    
+                    <!-- HUD Elements -->
+                    <div style="position: absolute; top: 15px; left: 15px; color: #38bdf8; font-family: monospace; font-size: 0.8rem;">
+                        <div>CAM_01_BEDSIDE</div>
+                        <div>FPS: 29.97</div>
+                        <div>ENC: AES-256</div>
+                    </div>
+                    <div style="position: absolute; bottom: 15px; left: 15px; color: #10b981; font-family: monospace; font-size: 0.8rem;">
+                        <div>AI_TRACKING: ENGAGED</div>
+                        <div>SUBJECT: LOCKED</div>
+                    </div>
+                    
+                    <!-- Face Tracking Box -->
+                    <div class="tracking-box d-none" id="trackingBox">
+                        <div class="tracking-label">FACE_DETECTED</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button id="startCamBtn" class="btn btn-success fw-bold px-4"><i class="fa-solid fa-link me-2"></i>Connect to Patient Feed</button>
+                <button id="stopCamBtn" class="btn btn-danger fw-bold px-4" disabled><i class="fa-solid fa-link-slash me-2"></i>Disconnect</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="carepulse-card p-4 h-100 bg-light">
+            <h5 class="fw-bold text-dark mb-4">Live Telemetry & Status</h5>
+            
+            <div class="mb-4 border-bottom pb-3">
+                <h6 class="small text-muted text-uppercase fw-bold mb-2">Sensor Reading Being Verified</h6>
+                <div class="d-flex justify-content-between">
+                    <span class="fw-bold">Recorded HR:</span>
+                    <span class="text-danger fw-bold">{{ reading.heart_rate if reading else '--' }} BPM</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span class="fw-bold">Recorded SpO₂:</span>
+                    <span class="text-primary fw-bold">{{ reading.spo2 if reading else '--' }} %</span>
+                </div>
+            </div>
+            
+            <h6 class="small text-muted text-uppercase fw-bold mb-3">AI Visual State Estimation</h6>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-bold">Connection:</span>
+                <span id="camStatus" class="badge bg-secondary px-3 py-2">Offline</span>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-bold">Face Detection:</span>
+                <span id="faceStatus" class="badge bg-secondary px-3 py-2">Waiting</span>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-bold">Movement Level:</span>
+                <span id="moveStatus" class="badge bg-secondary px-3 py-2">Waiting</span>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Expression:</span>
+                <span id="exprStatus" class="badge bg-secondary px-3 py-2">Waiting</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* CSS Animations for the Mock AI Feed */
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+    animation: scan 3s linear infinite;
+}
+@keyframes scan {
+    0% { top: 0; }
+    50% { top: 100%; }
+    100% { top: 0; }
+}
+.pulse-recording {
+    animation: blink 1.5s infinite;
+}
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+.tracking-box {
+    position: absolute;
+    top: 30%;
+    left: 40%;
+    width: 20%;
+    height: 30%;
+    border: 2px dashed #10b981;
+    background: rgba(16, 185, 129, 0.05);
+}
+.tracking-label {
+    position: absolute;
+    top: -20px;
+    left: -2px;
+    background: #10b981;
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+@keyframes breathing {
+    0% { transform: scale(1.0); filter: grayscale(40%) contrast(120%) brightness(80%); }
+    50% { transform: scale(1.03); filter: grayscale(40%) contrast(120%) brightness(84%); }
+    100% { transform: scale(1.0); filter: grayscale(40%) contrast(120%) brightness(80%); }
+}
+.patient-breathing {
+    animation: breathing 4s ease-in-out infinite;
+}
+</style>
+
+<script>
+    let simInterval = null;
+    
+    const placeholder = document.getElementById('camPlaceholder');
+    const remoteFeed = document.getElementById('remoteFeed');
+    const startBtn = document.getElementById('startCamBtn');
+    const stopBtn = document.getElementById('stopCamBtn');
+    const recBadge = document.getElementById('recBadge');
+    const trackingBox = document.getElementById('trackingBox');
+    
+    startBtn.addEventListener('click', () => {
+        // UI transitions to simulate connecting
+        startBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Connecting...';
+        startBtn.disabled = true;
+        
+        setTimeout(() => {
+            // "Connected" State
+            placeholder.classList.add('d-none');
+            remoteFeed.classList.remove('d-none');
+            recBadge.classList.remove('d-none');
+            
+            startBtn.innerHTML = '<i class="fa-solid fa-link me-2"></i>Connected';
+            stopBtn.disabled = false;
+            
+            document.getElementById('camStatus').innerText = 'Connected';
+            document.getElementById('camStatus').className = 'badge bg-success px-3 py-2';
+            
+            setTimeout(() => {
+                trackingBox.classList.remove('d-none');
+                document.getElementById('faceStatus').innerText = 'Subject Locked';
+                document.getElementById('faceStatus').className = 'badge bg-info text-dark px-3 py-2';
+            }, 1000);
+            
+            // Start simulation
+            simInterval = setInterval(() => {
+                const expressions = ['Neutral', 'Calm', 'Slight Discomfort', 'Resting'];
+                const exp = expressions[Math.floor(Math.random() * expressions.length)];
+                
+                document.getElementById('exprStatus').innerText = exp;
+                document.getElementById('exprStatus').className = exp === 'Slight Discomfort' ? 'badge bg-warning text-dark px-3 py-2' : 'badge bg-success px-3 py-2';
+                
+                const move = Math.random() > 0.7 ? 'Moderate' : 'Low';
+                document.getElementById('moveStatus').innerText = move;
+                document.getElementById('moveStatus').className = move === 'Moderate' ? 'badge bg-warning text-dark px-3 py-2' : 'badge bg-success px-3 py-2';
+            }, 2500);
+            
+        }, 1500); // 1.5 second connection delay for realism
+    });
+    
+    stopBtn.addEventListener('click', () => {
+        placeholder.classList.remove('d-none');
+        remoteFeed.classList.add('d-none');
+        recBadge.classList.add('d-none');
+        trackingBox.classList.add('d-none');
+        
+        startBtn.innerHTML = '<i class="fa-solid fa-link me-2"></i>Connect to Patient Feed';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        
+        clearInterval(simInterval);
+        
+        document.getElementById('camStatus').innerText = 'Offline';
+        document.getElementById('camStatus').className = 'badge bg-secondary px-3 py-2';
+        document.getElementById('faceStatus').innerText = 'Waiting';
+        document.getElementById('faceStatus').className = 'badge bg-secondary px-3 py-2';
+        document.getElementById('moveStatus').innerText = 'Waiting';
+        document.getElementById('moveStatus').className = 'badge bg-secondary px-3 py-2';
+        document.getElementById('exprStatus').innerText = 'Waiting';
+        document.getElementById('exprStatus').className = 'badge bg-secondary px-3 py-2';
+    });
+</script>
+{% endblock %}

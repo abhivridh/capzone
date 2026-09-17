@@ -1,0 +1,74 @@
+
+{% extends "base.html" %}
+{% block title %}Patient Detail — CarePulse{% endblock %}
+{% block header_title %}Patient Detail: {{ patient.name }}{% endblock %}
+{% block header_subtitle %}Patient ID: {{ patient.patient_id }} | Clinical Overview{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('doctor_dashboard_view') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-2"></i>Back to Dashboard</a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="carepulse-card p-4 text-center border-top border-4 border-danger h-100">
+            <h5 class="text-secondary fw-bold mb-3">Current Heart Rate</h5>
+            <div class="display-4 fw-bold text-dark">{{ latest.heart_rate if latest else '--' }} <span class="fs-6 text-muted">BPM</span></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="carepulse-card p-4 text-center border-top border-4 border-primary h-100">
+            <h5 class="text-secondary fw-bold mb-3">Current SpO₂</h5>
+            <div class="display-4 fw-bold text-dark">{{ latest.spo2 if latest else '--' }} <span class="fs-6 text-muted">%</span></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="carepulse-card p-4 text-center border-top border-4 border-warning h-100">
+            <h5 class="text-secondary fw-bold mb-3">Temperature</h5>
+            <div class="display-4 fw-bold text-dark">{{ latest.temperature if latest else '--' }} <span class="fs-6 text-muted">°C</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="carepulse-card p-4 mb-4 bg-light">
+    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-stethoscope text-teal me-2"></i>Doctor Actions</h5>
+    <a href="{{ url_for('doctor_camera_view', patient_id=patient.patient_id) }}" class="btn btn-primary fw-bold px-4 py-2">
+        <i class="fa-solid fa-camera me-2"></i> Monitor Patient Feed (Remote)
+    </a>
+    <p class="mt-2 small text-muted mb-0">Use the AI visual monitoring prototype to verify the patient's state and validate the sensor readings.</p>
+</div>
+
+<div class="carepulse-card p-4">
+    <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Critical Alerts Review</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Alert Type</th>
+                    <th>Value</th>
+                    <th>Review Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alerts %}
+                <tr>
+                    <td class="small text-muted">{{ a.created_at }}</td>
+                    <td class="fw-bold text-danger">{{ a.sensor_type }}</td>
+                    <td>{{ a.value }}</td>
+                    <td>
+                        <span class="badge {% if a.doctor_review_status == 'Reviewed' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                            {{ a.doctor_review_status or 'Pending' }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No recent alerts recorded.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

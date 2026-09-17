@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Registration — CarePulse
+<script>
+function togglePasswordVisibility_password(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+
+<script>
+function togglePasswordVisibility_confirmPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+{% endblock %}
+
+{% block public_content %}
+<div class="auth-page-container py-4">
+  <div class="auth-card" style="max-width: 650px;">
+    
+    <div class="auth-brand">
+      <div class="brand-badge">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <div>
+        <h3 class="fw-bold mb-0">CarePulse</h3>
+        <span class="small text-muted">Patient Health Registration</span>
+      </div>
+    </div>
+
+    <h4 class="fw-bold mb-1">Create Patient Account</h4>
+    <p class="text-secondary small mb-3">Register your profile and link your emergency caregiver to receive automated medical alerts.</p>
+
+    <!-- Flash messages inside card -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div id="clientValidationAlert" class="alert alert-danger small py-2 d-none" role="alert"></div>
+
+    <form method="POST" action="{{ url_for('patient_register_view') }}" id="patientRegisterForm" onsubmit="return validatePatientForm(event)">
+      
+      <!-- Section 1: Patient Details -->
+      <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+        <i class="fa-solid fa-user text-teal me-1"></i> Patient Personal Information
+      </h6>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="fullName" class="form-label small fw-bold text-secondary">Full Name *</label>
+          <input type="text" class="form-control" id="fullName" name="full_name" placeholder="John Doe" required minlength="3">
+        </div>
+        <div class="col-md-6">
+          <label for="email" class="form-label small fw-bold text-secondary">Email Address *</label>
+          <input type="email" class="form-control" id="email" name="email" placeholder="patient@example.com" required>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="phone" class="form-label small fw-bold text-secondary">Phone Number (10 digits) *</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light small">+91</span>
+            <input type="tel" class="form-control" id="phone" name="phone" placeholder="9876543210" required maxlength="10">
+          </div>
+          <span class="text-muted" style="font-size: 0.72rem;">Indian standard mobile format</span>
+        </div>
+        <div class="col-md-3">
+          <label for="age" class="form-label small fw-bold text-secondary">Age *</label>
+          <input type="number" class="form-control" id="age" name="age" min="1" max="120" value="45" required>
+        </div>
+        <div class="col-md-3">
+          <label for="gender" class="form-label small fw-bold text-secondary">Gender *</label>
+          <select class="form-select" id="gender" name="gender" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label for="password" class="form-label small fw-bold text-secondary">Password (Min 8 chars) *</label>
+          <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required minlength="8">
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility_password('password', 'eye_password')">
+              <i class="fa-regular fa-eye" id="eye_password"></i>
+            </button>
+        </div>
+        <div class="col-md-6">
+          <label for="confirmPassword" class="form-label small fw-bold text-secondary">Confirm Password *</label>
+          <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="••••••••" required minlength="8">
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility_confirmPassword('confirmPassword', 'eye_confirmPassword')">
+              <i class="fa-regular fa-eye" id="eye_confirmPassword"></i>
+            </button>
+        </div>
+      </div>
+
+      <!-- Section 2: Emergency Caregiver Details -->
+      <h6 class="fw-bold text-dark border-bottom pb-2 mb-2">
+        <i class="fa-solid fa-user-shield text-teal me-1"></i> Emergency Contact / Caregiver (Receives Alerts)
+      </h6>
+      <p class="text-muted small mb-3">When critical sensor anomalies are detected, emergency alert emails will be automatically dispatched to this caregiver.</p>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="caregiverName" class="form-label small fw-bold text-secondary">Caregiver Name *</label>
+          <input type="text" class="form-control" id="caregiverName" name="caregiver_name" placeholder="Athira Doe" required minlength="3">
+        </div>
+        <div class="col-md-6">
+          <label for="caregiverRelationship" class="form-label small fw-bold text-secondary">Relationship to Patient *</label>
+          <select class="form-select" id="caregiverRelationship" name="caregiver_relationship" required>
+            <option value="Daughter">Daughter</option>
+            <option value="Son">Son</option>
+            <option value="Husband">Husband</option>
+            <option value="Wife">Wife</option>
+            <option value="Father">Father</option>
+            <option value="Mother">Mother</option>
+            <option value="Brother">Brother</option>
+            <option value="Sister">Sister</option>
+            <option value="Other Caregiver">Other Caregiver</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label for="caregiverEmail" class="form-label small fw-bold text-secondary">Caregiver Alert Email *</label>
+          <input type="email" class="form-control" id="caregiverEmail" name="caregiver_email" placeholder="caregiver@example.com" required>
+          <span class="text-muted" style="font-size: 0.72rem;">Automated SMTP notifications are delivered here</span>
+        </div>
+        <div class="col-md-6">
+          <label for="caregiverPhone" class="form-label small fw-bold text-secondary">Caregiver Phone</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light small">+91</span>
+            <input type="tel" class="form-control" id="caregiverPhone" name="caregiver_phone" placeholder="9123456780" maxlength="10">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-white shadow-sm mb-3" style="background: var(--deep); border: none; border-radius: var(--radius-sm);">
+        <i class="fa-solid fa-user-check me-1"></i> COMPLETE PATIENT REGISTRATION
+      </button>
+
+    </form>
+
+    <div class="text-center mt-3 pt-3 border-top">
+      <span class="text-secondary small">Already have an account?</span>
+      <a href="{{ url_for('patient_login_view') }}" class="small fw-bold text-teal ms-1">Patient Sign In</a>
+      <span class="mx-2 text-muted">&bull;</span>
+      <a href="{{ url_for('caregiver_register_view') }}" class="small fw-bold text-secondary">Caregiver Registration</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function validatePatientForm(e) {
+  const alertBox = document.getElementById('clientValidationAlert');
+  alertBox.classList.add('d-none');
+  alertBox.innerText = '';
+
+  const fullName = document.getElementById('fullName').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const pwd = document.getElementById('password').value;
+  const cpwd = document.getElementById('confirmPassword').value;
+  const cgName = document.getElementById('caregiverName').value.trim();
+  const cgEmail = document.getElementById('caregiverEmail').value.trim();
+  const cgPhone = document.getElementById('caregiverPhone').value.trim();
+
+  // 1. Name validation
+  if (fullName.length < 3) {
+    showError("Please enter a valid full name (minimum 3 characters).");
+    e.preventDefault();
+    return false;
+  }
+
+  // 2. Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showError("Please enter a valid email address.");
+    e.preventDefault();
+    return false;
+  }
+
+  // 3. Indian Phone validation (10 digits starting with 6-9)
+  const phoneRegex = /^[6-9]\d{9}$/;
+  if (!phoneRegex.test(phone)) {
+    showError("Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).");
+    e.preventDefault();
+    return false;
+  }
+
+  // 4. Password validation
+  if (pwd.length < 8) {
+    showError("Password must be at least 8 characters long.");
+    e.preventDefault();
+    return false;
+  }
+  if (pwd !== cpwd) {
+    showError("Passwords do not match.");
+    e.preventDefault();
+    return false;
+  }
+
+  // 5. Caregiver validations
+  if (cgName.length < 3) {
+    showError("Please enter a valid caregiver name.");
+    e.preventDefault();
+    return false;
+  }
+  if (!emailRegex.test(cgEmail)) {
+    showError("Please enter a valid caregiver alert email address.");
+    e.preventDefault();
+    return false;
+  }
+  if (cgPhone && !phoneRegex.test(cgPhone)) {
+    showError("Please enter a valid 10-digit mobile number for the caregiver.");
+    e.preventDefault();
+    return false;
+  }
+
+  return true;
+
+  function showError(msg) {
+    alertBox.innerText = msg;
+    alertBox.classList.remove('d-none');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+</script>
+
+<script>
+function togglePasswordVisibility_password(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+
+<script>
+function togglePasswordVisibility_confirmPassword(inputId, iconId) {
+  const pwdInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    pwdInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+</script>
+
+{% endblock %}

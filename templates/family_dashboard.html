@@ -1,0 +1,115 @@
+
+{% extends "base.html" %}
+{% block title %}Family Dashboard — CarePulse{% endblock %}
+{% block header_title %}Family Portal{% endblock %}
+{% block header_subtitle %}Real-time monitoring of your loved ones.{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    {% for a in assigned_patients %}
+    <div class="col-lg-6">
+        <div class="carepulse-card h-100 p-4 border-top border-4 border-success">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">{{ a.patient.name }}</h5>
+                    <span class="small text-muted">ID: <code class="fw-bold">{{ a.patient.patient_id }}</code></span>
+                </div>
+                <div>
+                    <span class="badge bg-success px-3 py-2 rounded-pill">
+                        <i class="fa-solid fa-circle me-1" style="font-size: 0.6rem;"></i> MONITORED
+                    </span>
+                </div>
+            </div>
+
+            
+            <div class="mt-3">
+              <a href="{{ url_for('family_bp.family_camera_view', patient_id=a.patient.patient_id) }}" class="btn btn-primary btn-sm fw-bold w-100">
+                <i class="fa-solid fa-video me-2"></i> View Live Room Feed
+              </a>
+            </div>
+
+            <div class="mb-3 p-3 bg-light rounded border text-secondary small">
+              <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-user-doctor me-1"></i> Assigned Doctor</h6>
+              <div><strong>Name:</strong> {{ a.assigned_doctor.full_name }}</div>
+              <div><strong>Email:</strong> <a href="mailto:{{ a.assigned_doctor.email }}">{{ a.assigned_doctor.email }}</a></div>
+              <div><strong>Emergency Phone:</strong> {{ a.assigned_doctor.phone }}</div>
+              <hr class="my-2">
+              <h6 class="fw-bold text-teal mb-2"><i class="fa-solid fa-pills me-1"></i> Active Prescriptions</h6>
+              <ul class="mb-0 ps-3">
+                <li>Lisinopril 10mg - 1 tablet daily (Blood Pressure)</li>
+                <li>Atorvastatin 20mg - 1 tablet at bedtime (Cholesterol)</li>
+              </ul>
+            </div>
+            <!-- Vitals Tiles -->
+            <div class="row g-3 mb-3">
+              <div class="col-4">
+                <div class="p-3 bg-light rounded text-center border">
+                  <span class="small text-muted d-block mb-1">Heart Rate</span>
+                  <div class="fs-4 fw-bold text-danger">
+                    {% if a.latest_reading %}
+                      {{ a.latest_reading.heart_rate|round(1) }} <small class="fs-6 text-muted">BPM</small>
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="p-3 bg-light rounded text-center border">
+                  <span class="small text-muted d-block mb-1">SpO₂</span>
+                  <div class="fs-4 fw-bold text-primary">
+                    {% if a.latest_reading %}
+                      {{ a.latest_reading.spo2|round(1) }} <small class="fs-6 text-muted">%</small>
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="p-3 bg-light rounded text-center border">
+                  <span class="small text-muted d-block mb-1">Temp</span>
+                  <div class="fs-4 fw-bold text-warning">
+                    {% if a.latest_reading %}
+                      {{ a.latest_reading.temperature|round(1) }} <small class="fs-6 text-muted">°C</small>
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h6 class="fw-bold small text-dark border-top pt-3 mb-2">
+              <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Recent Alerts
+            </h6>
+            {% if a.recent_alerts %}
+              <div class="list-group list-group-flush small">
+                {% for alert in a.recent_alerts %}
+                  <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                    <div>
+                      <span class="badge {% if alert.severity=='Critical' %}bg-danger{% else %}bg-warning text-dark{% endif %} me-1">
+                        {{ alert.severity }}
+                      </span>
+                      {{ alert.message }}
+                    </div>
+                    <span class="text-muted" style="font-size: 0.72rem;">{{ alert.created_at }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-muted small fst-italic py-1">No recent alerts recorded.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="carepulse-card p-5 text-center">
+            <i class="fa-solid fa-user-slash text-muted mb-3" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold">No Patients Linked</h5>
+            <p class="text-secondary small mb-3">You do not have any patients linked to your family account.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
